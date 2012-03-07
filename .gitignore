@@ -1,0 +1,10 @@
+.DS_Store
+example/emptyExample.xcodeproj/project.pbxproj
+example/emptyExample.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+example/emptyExample.xcodeproj/project.xcworkspace/xcuserdata/Patricio.xcuserdatad/UserInterfaceState.xcuserstate
+example/emptyExample.xcodeproj/xcshareddata/WorkspaceSettings.xcsettings
+example/emptyExample.xcodeproj/xcshareddata/xcschemes/emptyExample.xcscheme
+example/emptyExample.xcodeproj/xcshareddata/xcschemes/xcschememanagement.plist
+example/emptyExample.xcodeproj/xcuserdata/Patricio.xcuserdatad/xcschemes/xcschememanagement.plist
+example/openFrameworks-Info.plist
+example/Project.xcconfig

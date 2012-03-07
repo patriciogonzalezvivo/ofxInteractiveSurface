@@ -1,0 +1,693 @@
+//
+//  ofxSurface.cpp
+//  emptyExample
+//
+//  Created by Patricio González Vivo on 3/5/12.
+//  Copyright (c) 2012 PatricioGonzalezVivo.com. All rights reserved.
+//
+
+#include "ofxSurface.h"
+
+ofxSurface::ofxSurface(){
+    
+    // Link the core events in order to catch mouse and keys
+    //
+    ofAddListener(ofEvents().mouseMoved, this, &ofxSurface::_mouseMoved);
+	ofAddListener(ofEvents().mousePressed, this, &ofxSurface::_mousePressed);
+	ofAddListener(ofEvents().mouseDragged, this, &ofxSurface::_mouseDragged);
+	ofAddListener(ofEvents().mouseReleased, this, &ofxSurface::_mouseReleased);
+	ofAddListener(ofEvents().keyPressed, this, &ofxSurface::_keyPressed);
+	ofAddListener(ofEvents().keyReleased, this, &ofxSurface::_keyReleased);
+    
+    // This two files handle the selected points of the mask or texture corners
+    // if it´s -1 means nothing is selected, other wise the number it´s the position
+    // on the array
+    //
+    selectedMaskCorner = -1;
+    selectedTextureCorner = -1;
+    
+    // "e" to enable/disable EditMode where you can transform, and modify the texture
+    // In editMode press "m" to access to the mask points, or "M" to stay in that mode 
+    // until "m" it´s pressed again.
+    //
+    bEditMode = true;
+    bEditMask = false;
+    
+    // In order to simplify some things I´m using ofPolyline, specialy for making easy
+    // to check if the mouse it´s over the surface.
+    // So each textureCorner have an absolute value. It could be improve using normalized
+    // and centerBased coordenates in order to make propper scalations and rotations.
+    //
+    textureCorners.addVertex(0.0,0.0);
+    textureCorners.addVertex(1.0,0.0);
+    textureCorners.addVertex(1.0,1.0);
+    textureCorners.addVertex(0.0,1.0);
+    
+    // MaskPointer are normalized because they depend on the textureCorners. To deal with
+    // them it´s necesary to make some transformations using the ScreenToSurface matrix
+    //
+    ofPoint newPoint = ofPoint(0.0,0.0,0.0);
+    maskCorners.push_back(newPoint);
+    newPoint.set(1.0,0.0,0.0);
+    maskCorners.push_back(newPoint);
+    newPoint.set(1.0,1.0,0.0);
+    maskCorners.push_back(newPoint);
+    newPoint.set(0.0,1.0,0.0);
+    maskCorners.push_back(newPoint);
+    
+    // This shader it´s basicaly a alphaMask shader for quick and clean masking
+    // also I added some opacity variables in order to chech and see the masked-texture
+    // wile you are editing it.
+    //
+    string shaderProgram = "#version 120\n \
+    #extension GL_ARB_texture_rectangle : enable\n \
+    \
+    uniform sampler2DRect tex0;\
+    uniform sampler2DRect maskTex;\
+    uniform float texOpacity;\
+    uniform float maskOpacity;\
+    \
+    void main (void){\
+    vec2 pos = gl_TexCoord[0].st;\
+    \
+    vec3 src = texture2DRect(tex0, pos).rgb;\
+    float mask = texture2DRect(maskTex, pos).r;\
+    \
+    gl_FragColor = vec4( src * texOpacity , clamp(mask, maskOpacity, 1.0));\
+    }";
+    maskShader.setupShaderFromSource(GL_FRAGMENT_SHADER, shaderProgram);    // Load ...
+    maskShader.linkProgram();                                               // ... and compile the shader
+}
+
+void ofxSurface::loadSettings( string filePath, int _nId ){
+    ofxXmlSettings XML;
+    
+    configFile = filePath;
+    
+    if (_nId != -1)
+        nId = _nId;
+    else
+        nId = 0;
+    
+    if (XML.loadFile(filePath)){
+        maskCorners.clear();
+        XML.pushTag("surface", nId); 
+        
+        XML.pushTag("texture");
+        for(int i = 0; i < 4; i++){
+            XML.pushTag("point",i);
+            textureCorners[i].set(XML.getValue("x", 0.0),XML.getValue("y", 0.0));
+            XML.popTag();
+        }
+        XML.popTag();
+        
+        XML.pushTag("mask");
+        int totalMaskCorners = XML.getNumTags("point");
+        for(int i = 0; i < totalMaskCorners; i++){
+            XML.pushTag("point",i);
+            ofPoint newPoint = ofPoint(XML.getValue("x", 0.0),XML.getValue("y", 0.0),0.0);
+            if ((newPoint.x != -1.0) && (newPoint.x != -1.0))
+                maskCorners.push_back(newPoint);
+            XML.popTag();
+        }
+        XML.popTag();
+        cout << maskCorners.size() << " total masking points" << endl;
+        
+        XML.popTag();
+    } else
+        cout << " [ FAIL ]" << endl;
+}
+
+void ofxSurface::saveSettings(string filePath, int nId){
+    ofxXmlSettings XML;
+    
+    if (XML.loadFile(filePath)){
+        XML.pushTag("surface", nId); 
+        
+        XML.pushTag("texture");
+        for(int i = 0; i < 4; i++){
+            XML.setValue("point:x",textureCorners[i].x, i);
+            XML.setValue("point:y",textureCorners[i].y, i);
+        }
+        XML.popTag();
+        
+        XML.pushTag("mask");
+        int totalMaskCorners = XML.getNumTags("point");
+        
+        for(int i = 0; i < maskCorners.size(); i++){
+            int tagNum = i;
+            
+            if (i >= totalMaskCorners)
+                tagNum = XML.addTag("point");
+            
+            XML.setValue("point:x",maskCorners[i].x, tagNum);
+            XML.setValue("point:y",maskCorners[i].y, tagNum);
+        }
+        
+        if (maskCorners.size() < totalMaskCorners){
+            for(int i = maskCorners.size() ; i < totalMaskCorners; i++){
+                XML.setValue("point:x",-1.0, i);
+                XML.setValue("point:y",-1.0, i);
+            }
+        }
+        
+        doMask();
+        XML.popTag();
+        
+        XML.popTag();
+    } else
+        cout << " [ FAIL ]" << endl;
+    XML.saveFile();
+}
+
+void ofxSurface::draw( ofTexture &texture ){
+    
+    // If the texture change or it´s new it will update some parameters
+    // like the size of the FBO, de mask and the matrix
+    //
+    if ((width != texture.getWidth()) ||
+        (height != texture.getHeight()) ){
+        width = texture.getWidth();
+        height = texture.getHeight();
+        
+        maskFbo.allocate(width,height);
+        doMask();
+        doSurfaceToScreenMatrix();
+    }
+    
+    //  Here is where the magic happends
+    //  Make the matrix multiplication and mask the texture
+    ofPushMatrix();
+    float texOpacity = 0.0;
+    float maskOpacity = 0.0;
+    
+    if ( textureCorners.inside(ofGetMouseX(), ofGetMouseY()) && (bEditMode)){
+        texOpacity = 1.0;
+        maskOpacity = 0.2;
+    } else if (!bEditMode){
+        texOpacity = 1.0;
+        maskOpacity = 0.0;
+    } else {
+        texOpacity = 0.8;
+        maskOpacity = 0.0;
+    }
+    
+    // Matrix multiplication: rotates, translate and resize to get the right perspective
+    //
+    glMultMatrixf(glMatrix);
+    
+    // Active the alpha-masking shader
+    //
+    maskShader.begin();
+    maskShader.setUniformTexture("maskTex", maskFbo.getTextureReference(), 1 );
+    maskShader.setUniform1f("texOpacity", texOpacity);
+    maskShader.setUniform1f("maskOpacity", maskOpacity);
+    
+    // Draw the texture (image, video, Fbo, etc)
+    //
+    texture.draw(0,0);
+    
+    // Close and re-set everything like nothing happend
+    //
+    maskShader.end();
+    ofPopMatrix();
+    
+    
+    // This just draw the circles and lines
+    //
+    ofPushStyle();
+    if (bEditMode){
+        if ( !bEditMask ){
+            ofFill();
+            // Draw dragables texture corners
+            //
+            for(int i = 0; i < 4; i++){
+                if ( ( selectedTextureCorner == i) || ( ofDist(ofGetMouseX(), ofGetMouseY(), textureCorners[i].x, textureCorners[i].y) <= 5 ) ) ofSetColor(200,255);
+                else ofSetColor(200,100);
+                    
+                ofRect(textureCorners[i].x-5,textureCorners[i].y-5, 10,10);
+                
+                // Draw contour Line
+                //
+                ofLine(textureCorners[i].x, textureCorners[i].y, textureCorners[(i+1)%4].x, textureCorners[(i+1)%4].y);
+            }
+        } else {
+            // Draw dragables mask corners
+            //
+            for(int i = 0; i < maskCorners.size(); i++){
+                ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
+                pos = surfaceToScreenMatrix * pos;
+                
+                if ( (selectedMaskCorner == i) || ( ofDist(ofGetMouseX(), ofGetMouseY(), pos.x, pos.y) <= 5 ) ) {
+                    ofSetColor(255,255);
+                    ofCircle( pos, 5);
+                    ofSetColor(255,100);
+                    ofFill();
+                } else {
+                    ofNoFill();
+                    ofSetColor(255,100);
+                }
+                    
+                ofCircle( pos, 5);
+                
+                // Draw contour mask line
+                //
+                ofSetColor(255,200);
+                ofVec3f nextPos = ofVec3f(maskCorners[(i+1)%maskCorners.size()].x*width, 
+                                          maskCorners[(i+1)%maskCorners.size()].y*height, 0.0);
+                nextPos = surfaceToScreenMatrix * nextPos;
+                ofLine(pos.x,pos.y,nextPos.x,nextPos.y);
+            }
+        }
+    }
+    ofPopStyle();
+}
+
+//Mouse Events
+void ofxSurface::_mouseMoved(ofMouseEventArgs &e){
+    mouseLast = ofVec2f(e.x, e.y);
+}
+
+void ofxSurface::_mousePressed(ofMouseEventArgs &e){
+    ofVec3f mouse = ofVec3f(e.x, e.y, 0.0);
+    
+    if (bEditMode){
+        if (!bEditMask){
+            // Editing the texture corners
+            //
+            for(int i = 0; i < 4; i++){
+                if ( ofDist(e.x, e.y, textureCorners[i].x, textureCorners[i].y) <= 10 )
+                    selectedTextureCorner = i;
+            }
+        } else {
+            // Editing the mask corners
+            //
+            
+            bool overDot = false;
+            for(int i = 0; i < maskCorners.size(); i++){
+                ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
+                pos = surfaceToScreenMatrix * pos;
+                
+                if ( ofDist(e.x, e.y, pos.x, pos.y) <= 10 ){
+                    selectedMaskCorner = i;
+                    overDot = true;
+                }
+            }
+            
+            // Add new Dot if it´s over the line
+            //
+            if (!overDot && (textureCorners.inside(mouse))){
+                
+                doScreenToSurfaceMatrix();
+                mouse = screenToSurfaceMatrix * mouse;
+                mouse.x = mouse.x / width;
+                mouse.y = mouse.y / height;
+                
+                int addNew = -1;
+                
+                // Search for the right placer to incert the point in the array
+                //
+                for (int i = 0; i < maskCorners.size(); i++){
+                    int next = (i+1)%maskCorners.size();
+                    
+                    ofVec2f AtoM = mouse - maskCorners[i];
+                    ofVec2f AtoB = maskCorners[next] - maskCorners[i];
+                    
+                    float a = atan2(AtoM.x, AtoM.y);
+                    float b = atan2(AtoB.x, AtoB.y);
+                    
+                    if ( abs(a - b) < 0.05){
+                        addNew = next;
+                    }
+                }
+                
+                if (addNew >= 0 ){
+                    maskCorners.insert(maskCorners.begin()+addNew, mouse);
+                    selectedMaskCorner = addNew;
+                }
+                
+            }
+        }
+    }
+}
+
+void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
+    ofVec3f mouse = ofVec3f(e.x, e.y, 0.0);
+    
+    if (bEditMode){
+        if (!bEditMask){
+            
+            // Drag texture corners
+            //
+            if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
+                
+                textureCorners[selectedTextureCorner].x = ofGetMouseX();
+                textureCorners[selectedTextureCorner].y = ofGetMouseY();
+                
+                doSurfaceToScreenMatrix();
+                saveSettings(configFile, nId);
+            } 
+            
+            // Drag all the surface
+            //
+            else if (textureCorners.inside(mouse)){
+                
+                
+                for (int i = 0; i < 4; i++){
+                    textureCorners[i] += mouse-mouseLast;
+                }
+                
+                doSurfaceToScreenMatrix();
+                saveSettings(configFile, nId);
+                mouseLast = mouse;
+            }
+        } else {
+            
+            // Drag mask points
+            //
+            for(int i = 0; i < maskCorners.size(); i++){
+                ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
+                pos = surfaceToScreenMatrix * pos;
+                
+                if ((selectedMaskCorner >= 0) && (selectedMaskCorner < maskCorners.size() )){
+                    ofVec3f newPos = ofVec3f(mouse.x, mouse.y, 0.0);
+                    doScreenToSurfaceMatrix();
+                    newPos = screenToSurfaceMatrix * mouse;
+                    newPos.x = ofClamp(newPos.x / width, 0.0, 1.0);
+                    newPos.y = ofClamp(newPos.y / height, 0.0, 1.0);
+                    
+                    maskCorners[selectedMaskCorner] = newPos;
+                }
+            }
+            doMask();
+            saveSettings(configFile, nId);
+        }
+    }
+    mouseLast = ofVec2f(e.x, e.y);
+}
+
+void ofxSurface::_mouseReleased(ofMouseEventArgs &e){
+    if (bEditMode){
+        if (!bEditMask){
+            if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
+                doSurfaceToScreenMatrix();
+                saveSettings(configFile, nId);
+                selectedTextureCorner = -1;
+            }
+        } else {
+            saveSettings(configFile, nId);
+            selectedMaskCorner = -1;
+        }
+    }
+}
+
+//Key Events
+void ofxSurface::_keyPressed(ofKeyEventArgs &e){
+    
+    switch (e.key) {
+        case 'm':
+            bEditMask = true;
+            break;
+        case 'M':
+            bEditMask = !bEditMask;
+            break;
+        case 'e':
+            bEditMode = !bEditMode;
+            break;
+    }
+    
+    // Delete the selected mask point
+    //
+    if ( bEditMode && bEditMask && 
+        (e.key == 'd') && 
+        (selectedMaskCorner >= 0) && 
+        (selectedMaskCorner < maskCorners.size() ) ){
+        maskCorners.erase(maskCorners.begin()+ selectedMaskCorner );
+        selectedMaskCorner = -1;
+        doMask();
+        saveSettings(configFile, nId);
+    }
+    
+    // Reset all the mask or the texture
+    //
+    if ( bEditMode && bEditMask && 
+        (e.key == 'c') &&
+        (textureCorners.inside(mouseLast))){
+        maskCorners.clear();
+        selectedMaskCorner = -1;
+        ofPoint newPoint = ofPoint(0.0,0.0,0.0);
+        maskCorners.push_back(newPoint);
+        newPoint.set(1.0,0.0,0.0);
+        maskCorners.push_back(newPoint);
+        newPoint.set(1.0,1.0,0.0);
+        maskCorners.push_back(newPoint);
+        newPoint.set(0.0,1.0,0.0);
+        maskCorners.push_back(newPoint);
+        doMask();
+        saveSettings(configFile, nId);
+    } else if ( bEditMode && !bEditMask && 
+               (e.key == 'c') &&
+               (textureCorners.inside(mouseLast))){
+        textureCorners[0].set(0, 0);
+        textureCorners[1].set(width, 0);
+        textureCorners[2].set(width, height);
+        textureCorners[3].set(0, height);
+        doSurfaceToScreenMatrix();
+        doMask();
+        saveSettings(configFile, nId);
+    }
+}
+
+void ofxSurface::_keyReleased(ofKeyEventArgs &e){
+    if (e.key ==  'm'){
+        bEditMask = false;
+    }
+}
+
+void ofxSurface::doMask(){
+    // Generate masking contour
+    maskFbo.begin();
+    ofClear(0,255);
+    ofBeginShape();
+    ofSetColor(255, 255, 255);
+    for(int i = 0; i < maskCorners.size(); i++ ){
+        ofVertex(maskCorners[i].x*width,maskCorners[i].y*height);
+    }
+    ofEndShape(true);
+    maskFbo.end();
+}
+
+void ofxSurface::doSurfaceToScreenMatrix(){
+    ofPoint src[4];
+    
+    src[0].set(0, 0);
+    src[1].set(width,0.0);
+    src[2].set(width,height);
+    src[3].set(0, height);
+    
+    ofPoint dst[4];
+    for(int i = 0; i < 4; i++){
+        dst[i] = textureCorners[i];
+    }
+    
+    // create the equation system to be solved
+    //
+    // from: Multiple View Geometry in Computer Vision 2ed
+    //       Hartley R. and Zisserman A.
+    //
+    // x' = xH
+    // where H is the homography: a 3 by 3 matrix
+    // that transformed to inhomogeneous coordinates for each point
+    // gives the following equations for each point:
+    //
+    // x' * (h31*x + h32*y + h33) = h11*x + h12*y + h13
+    // y' * (h31*x + h32*y + h33) = h21*x + h22*y + h23
+    //
+    // as the homography is scale independent we can let h33 be 1 (indeed any of the terms)
+    // so for 4 points we have 8 equations for 8 terms to solve: h11 - h32
+    // after ordering the terms it gives the following matrix
+    // that can be solved with gaussian elimination:
+    
+    float P[8][9]=
+    {
+        {-src[0].x, -src[0].y, -1,   0,   0,  0, src[0].x*dst[0].x, src[0].y*dst[0].x, -dst[0].x }, // h11
+        {  0,   0,  0, -src[0].x, -src[0].y, -1, src[0].x*dst[0].y, src[0].y*dst[0].y, -dst[0].y }, // h12
+        
+        {-src[1].x, -src[1].y, -1,   0,   0,  0, src[1].x*dst[1].x, src[1].y*dst[1].x, -dst[1].x }, // h13
+        {  0,   0,  0, -src[1].x, -src[1].y, -1, src[1].x*dst[1].y, src[1].y*dst[1].y, -dst[1].y }, // h21
+        
+        {-src[2].x, -src[2].y, -1,   0,   0,  0, src[2].x*dst[2].x, src[2].y*dst[2].x, -dst[2].x }, // h22
+        {  0,   0,  0, -src[2].x, -src[2].y, -1, src[2].x*dst[2].y, src[2].y*dst[2].y, -dst[2].y }, // h23
+        
+        {-src[3].x, -src[3].y, -1,   0,   0,  0, src[3].x*dst[3].x, src[3].y*dst[3].x, -dst[3].x }, // h31
+        {  0,   0,  0, -src[3].x, -src[3].y, -1, src[3].x*dst[3].y, src[3].y*dst[3].y, -dst[3].y }, // h32
+    };
+    
+    doGaussianElimination(&P[0][0],9);
+    
+    // gaussian elimination gives the results of the equation system
+    // in the last column of the original matrix.
+    // opengl needs the transposed 4x4 matrix:
+    float aux_H[]= {P[0][8],P[3][8],0,P[6][8], // h11  h21 0 h31
+                    P[1][8],P[4][8],0,P[7][8], // h12  h22 0 h32
+                    0      ,      0,0,0,       // 0    0   0 0
+                    P[2][8],P[5][8],0,1        // h13  h23 0 h33
+                    };                          
+    
+    for(int i=0; i<16; i++) 
+        glMatrix[i] = aux_H[i];
+    
+     surfaceToScreenMatrix(0,0)=P[0][8];
+     surfaceToScreenMatrix(0,1)=P[1][8];
+     surfaceToScreenMatrix(0,2)=0;
+     surfaceToScreenMatrix(0,3)=P[2][8];
+     
+     surfaceToScreenMatrix(1,0)=P[3][8];
+     surfaceToScreenMatrix(1,1)=P[4][8];
+     surfaceToScreenMatrix(1,2)=0;
+     surfaceToScreenMatrix(1,3)=P[5][8];
+     
+     surfaceToScreenMatrix(2,0)=0;
+     surfaceToScreenMatrix(2,1)=0;
+     surfaceToScreenMatrix(2,2)=0;
+     surfaceToScreenMatrix(2,3)=0;
+     
+     surfaceToScreenMatrix(3,0)=P[6][8];
+     surfaceToScreenMatrix(3,1)=P[7][8];
+     surfaceToScreenMatrix(3,2)=0;
+     surfaceToScreenMatrix(3,3)=1;
+}
+
+void ofxSurface::doScreenToSurfaceMatrix(){
+    ofPoint dst[4];
+    
+    dst[0].set(0, 0);
+    dst[1].set(width,0.0);
+    dst[2].set(width,height);
+    dst[3].set(0, height);
+    
+    ofPoint src[4];
+    for(int i = 0; i < 4; i++){
+        src[i] = textureCorners[i];
+    }
+    
+    // create the equation system to be solved
+    //
+    // from: Multiple View Geometry in Computer Vision 2ed
+    //       Hartley R. and Zisserman A.
+    //
+    // x' = xH
+    // where H is the homography: a 3 by 3 matrix
+    // that transformed to inhomogeneous coordinates for each point
+    // gives the following equations for each point:
+    //
+    // x' * (h31*x + h32*y + h33) = h11*x + h12*y + h13
+    // y' * (h31*x + h32*y + h33) = h21*x + h22*y + h23
+    //
+    // as the homography is scale independent we can let h33 be 1 (indeed any of the terms)
+    // so for 4 points we have 8 equations for 8 terms to solve: h11 - h32
+    // after ordering the terms it gives the following matrix
+    // that can be solved with gaussian elimination:
+    
+    float P[8][9]=
+    {
+        {-src[0].x, -src[0].y, -1,   0,   0,  0, src[0].x*dst[0].x, src[0].y*dst[0].x, -dst[0].x }, // h11
+        {  0,   0,  0, -src[0].x, -src[0].y, -1, src[0].x*dst[0].y, src[0].y*dst[0].y, -dst[0].y }, // h12
+        
+        {-src[1].x, -src[1].y, -1,   0,   0,  0, src[1].x*dst[1].x, src[1].y*dst[1].x, -dst[1].x }, // h13
+        {  0,   0,  0, -src[1].x, -src[1].y, -1, src[1].x*dst[1].y, src[1].y*dst[1].y, -dst[1].y }, // h21
+        
+        {-src[2].x, -src[2].y, -1,   0,   0,  0, src[2].x*dst[2].x, src[2].y*dst[2].x, -dst[2].x }, // h22
+        {  0,   0,  0, -src[2].x, -src[2].y, -1, src[2].x*dst[2].y, src[2].y*dst[2].y, -dst[2].y }, // h23
+        
+        {-src[3].x, -src[3].y, -1,   0,   0,  0, src[3].x*dst[3].x, src[3].y*dst[3].x, -dst[3].x }, // h31
+        {  0,   0,  0, -src[3].x, -src[3].y, -1, src[3].x*dst[3].y, src[3].y*dst[3].y, -dst[3].y }, // h32
+    };
+    
+    doGaussianElimination(&P[0][0],9);
+    
+    screenToSurfaceMatrix(0,0)=P[0][8];
+	screenToSurfaceMatrix(0,1)=P[1][8];
+	screenToSurfaceMatrix(0,2)=0;
+	screenToSurfaceMatrix(0,3)=P[2][8];
+	
+	screenToSurfaceMatrix(1,0)=P[3][8];
+	screenToSurfaceMatrix(1,1)=P[4][8];
+	screenToSurfaceMatrix(1,2)=0;
+	screenToSurfaceMatrix(1,3)=P[5][8];
+	
+	screenToSurfaceMatrix(2,0)=0;
+	screenToSurfaceMatrix(2,1)=0;
+	screenToSurfaceMatrix(2,2)=0;
+	screenToSurfaceMatrix(2,3)=0;
+	
+	screenToSurfaceMatrix(3,0)=P[6][8];
+	screenToSurfaceMatrix(3,1)=P[7][8];
+	screenToSurfaceMatrix(3,2)=0;
+	screenToSurfaceMatrix(3,3)=1;
+    
+}
+
+void ofxSurface::doGaussianElimination(float *input, int n){
+    // ported to c from pseudocode in
+    // http://en.wikipedia.org/wiki/Gaussian_elimination
+    
+    float * A = input;
+    int i = 0;
+    int j = 0;
+    int m = n-1;
+    while (i < m && j < n)
+    {
+        // Find pivot in column j, starting in row i:
+        int maxi = i;
+        for(int k = i+1; k<m; k++)
+        {
+            if(fabs(A[k*n+j]) > fabs(A[maxi*n+j]))
+            {
+                maxi = k;
+            }
+        }
+        if (A[maxi*n+j] != 0)
+        {
+            //swap rows i and maxi, but do not change the value of i
+            if(i!=maxi)
+                for(int k=0; k<n; k++)
+                {
+                    float aux = A[i*n+k];
+                    A[i*n+k]=A[maxi*n+k];
+                    A[maxi*n+k]=aux;
+                }
+            //Now A[i,j] will contain the old value of A[maxi,j].
+            //divide each entry in row i by A[i,j]
+            float A_ij=A[i*n+j];
+            for(int k=0; k<n; k++)
+            {
+                A[i*n+k]/=A_ij;
+            }
+            //Now A[i,j] will have the value 1.
+            for(int u = i+1; u< m; u++)
+            {
+                //subtract A[u,j] * row i from row u
+                float A_uj = A[u*n+j];
+                for(int k=0; k<n; k++)
+                {
+                    A[u*n+k]-=A_uj*A[i*n+k];
+                }
+                //Now A[u,j] will be 0, since A[u,j] - A[i,j] * A[u,j] = A[u,j] - 1 * A[u,j] = 0.
+            }
+            
+            i++;
+        }
+        j++;
+    }
+    
+    //back substitution
+    for(int i=m-2; i>=0; i--)
+    {
+        for(int j=i+1; j<n-1; j++)
+        {
+            A[i*n+m]-=A[i*n+j]*A[j*n+m];
+            //A[i*n+j]=0;
+        }
+    }
+}
