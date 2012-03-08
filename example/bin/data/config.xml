@@ -1,26 +1,38 @@
 <surface>
     <texture>
         <point>
-            <x>521</x>
-            <y>21</y>
+            <x>273</x>
+            <y>85</y>
         </point>
         <point>
-            <x>367</x>
-            <y>165</y>
+            <x>604</x>
+            <y>78</y>
         </point>
         <point>
-            <x>420</x>
-            <y>276</y>
+            <x>601</x>
+            <y>326</y>
         </point>
         <point>
-            <x>688</x>
-            <y>411</y>
+            <x>272</x>
+            <y>336</y>
         </point>
     </texture>
     <mask>
         <point>
-            <x>0</x>
-            <y>0</y>
+            <x>0.120439</x>
+            <y>0.237684</y>
+        </point>
+        <point>
+            <x>0.240983</x>
+            <y>0.341056</y>
+        </point>
+        <point>
+            <x>0.354089</x>
+            <y>0.0775743</y>
+        </point>
+        <point>
+            <x>0.794573</x>
+            <y>0.254564</y>
         </point>
         <point>
             <x>1</x>
@@ -33,18 +45,6 @@
         <point>
             <x>0</x>
             <y>1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
         </point>
         <point>
             <x>-1</x>
@@ -71,114 +71,114 @@
 <surface>
     <texture>
         <point>
-            <x>92</x>
-            <y>230</y>
+            <x>669</x>
+            <y>378</y>
         </point>
         <point>
-            <x>367</x>
-            <y>165</y>
+            <x>275</x>
+            <y>405</y>
         </point>
         <point>
-            <x>420</x>
-            <y>276</y>
+            <x>310</x>
+            <y>697</y>
         </point>
         <point>
-            <x>251</x>
-            <y>614</y>
+            <x>733</x>
+            <y>689</y>
         </point>
     </texture>
     <mask>
         <point>
-            <x>0.15375</x>
-            <y>0.383333</y>
+            <x>0</x>
+            <y>0</y>
         </point>
         <point>
-            <x>0.20625</x>
-            <y>0.311667</y>
+            <x>1</x>
+            <y>0</y>
         </point>
         <point>
-            <x>0.205</x>
-            <y>0.211667</y>
+            <x>1</x>
+            <y>1</y>
         </point>
         <point>
-            <x>0.2525</x>
-            <y>0.153333</y>
+            <x>0</x>
+            <y>1</y>
         </point>
         <point>
-            <x>0.25625</x>
-            <y>0.196667</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.30625</x>
-            <y>0.126667</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.30875</x>
-            <y>0.178333</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.355</x>
-            <y>0.113333</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.71875</x>
-            <y>0.116667</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.71875</x>
-            <y>0.306667</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.515</x>
-            <y>0.588333</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.51125</x>
-            <y>0.538333</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.4125</x>
-            <y>0.67</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.40875</x>
-            <y>0.626667</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.36</x>
-            <y>0.695</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.35625</x>
-            <y>0.593333</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.31</x>
-            <y>0.66</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.30625</x>
-            <y>0.618333</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.2575</x>
-            <y>0.688333</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.255</x>
-            <y>0.586667</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.20625</x>
-            <y>0.661667</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.2025</x>
-            <y>0.603333</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
-            <x>0.15375</x>
-            <y>0.68</y>
+            <x>-1</x>
+            <y>-1</y>
         </point>
         <point>
             <x>-1</x>

@@ -19,7 +19,8 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     
-    ofImage     image;
+    ofImage         image;
+    ofVideoGrabber  video;
     
     ofxSurface  surface[2];
 };

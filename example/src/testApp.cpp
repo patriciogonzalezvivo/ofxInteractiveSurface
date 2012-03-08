@@ -6,12 +6,17 @@ void testApp::setup(){
     //ofEnableSmoothing();
     
     image.loadImage("A.jpg");
+    
+    video.initGrabber(640, 480);
+    
     surface[0].loadSettings("config.xml",0);
     surface[1].loadSettings("config.xml",1);
 }
 
 //--------------------------------------------------------------
 void testApp::update(){
+    video.update();
+    
     ofSetWindowTitle( ofToString( ofGetFrameRate() ));
 }
 
@@ -19,13 +24,17 @@ void testApp::update(){
 void testApp::draw(){
     ofBackgroundGradient(ofColor::gray, ofColor::black);
     
-    surface[0].draw( image.getTextureReference() );
+    surface[0].draw( video.getTextureReference() );
     surface[1].draw( image.getTextureReference() );
 }
 
 //--------------------------------------------------------------
 void testApp::keyPressed(int key){
-
+    switch (key) {
+        case 'f':
+            ofToggleFullscreen();
+            break;
+    }
 }
 
 //--------------------------------------------------------------
