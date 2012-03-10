@@ -23,11 +23,24 @@ public:
     void    loadSettings( string _configFile = "config.xml", int _nId = -1);
     void    saveSettings( string _configFile = "config.xml", int _nId = -1);
     
+    //void    setAutoActivation( bool _autoActive);
+    
+    bool    isOver(ofPoint _loc){ return textureCorners.inside(_loc); };
+    ofPoint getPos(){ return ofPoint(x,y); };
+    
+    void    move(ofPoint _pos);
+    void    scale(float _scale);
+    void    rotate(float _angle);
+    
     // Load and Draw ( super simple )
     //
     void    draw( ofTexture &texture );
     
-private:
+    
+    bool    bActive, bEditMode;
+    
+protected:
+    void    doFrame();
     void    doMask();                       // Update the mask
     void    doSurfaceToScreenMatrix();      // Update the SurfaceToScreen transformation matrix
     void    doScreenToSurfaceMatrix();      // Update the ScreenToSurface transformation matrix
@@ -46,7 +59,7 @@ private:
     //
     ofFbo       maskFbo;
     ofShader    maskShader;
-    vector<ofPoint> maskCorners;
+    ofPolyline  maskCorners;
 	int         selectedMaskCorner;
     
     // Texture varialbes
@@ -64,7 +77,8 @@ private:
     //
     string      configFile;
     ofVec2f     mouseLast;
+    float       x, y;
     int         width, height, nId; 
-    bool        bEditMask, bEditMode;
+    bool        bEditMask, bFreeTransform, bRotate, bAutoActive;
 };
 #endif

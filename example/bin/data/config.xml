@@ -1,38 +1,26 @@
 <surface>
     <texture>
         <point>
-            <x>273</x>
-            <y>85</y>
+            <x>372.809</x>
+            <y>64.4893</y>
         </point>
         <point>
-            <x>604</x>
-            <y>78</y>
+            <x>729.84</x>
+            <y>136.056</y>
         </point>
         <point>
-            <x>601</x>
-            <y>326</y>
+            <x>733.37</x>
+            <y>335.705</y>
         </point>
         <point>
-            <x>272</x>
-            <y>336</y>
+            <x>370.682</x>
+            <y>214.456</y>
         </point>
     </texture>
     <mask>
         <point>
-            <x>0.120439</x>
-            <y>0.237684</y>
-        </point>
-        <point>
-            <x>0.240983</x>
-            <y>0.341056</y>
-        </point>
-        <point>
-            <x>0.354089</x>
-            <y>0.0775743</y>
-        </point>
-        <point>
-            <x>0.794573</x>
-            <y>0.254564</y>
+            <x>0</x>
+            <y>0</y>
         </point>
         <point>
             <x>1</x>
@@ -71,20 +59,20 @@
 <surface>
     <texture>
         <point>
-            <x>669</x>
-            <y>378</y>
+            <x>133.866</x>
+            <y>125.398</y>
         </point>
         <point>
-            <x>275</x>
-            <y>405</y>
+            <x>384</x>
+            <y>72</y>
         </point>
         <point>
-            <x>310</x>
-            <y>697</y>
+            <x>382</x>
+            <y>213</y>
         </point>
         <point>
-            <x>733</x>
-            <y>689</y>
+            <x>133.867</x>
+            <y>292.954</y>
         </point>
     </texture>
     <mask>
@@ -103,86 +91,6 @@
         <point>
             <x>0</x>
             <y>1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
-        </point>
-        <point>
-            <x>-1</x>
-            <y>-1</y>
         </point>
     </mask>
 </surface>
