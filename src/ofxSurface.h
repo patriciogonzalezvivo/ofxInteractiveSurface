@@ -37,7 +37,7 @@ public:
     void    draw( ofTexture &texture );
     
     
-    bool    bActive, bEditMode;
+    bool    bActive, bEditMode, bEditMask, bAutoActive;
     
 protected:
     void    doFrame();
@@ -79,6 +79,6 @@ protected:
     ofVec2f     mouseLast;
     float       x, y;
     int         width, height, nId; 
-    bool        bEditMask, bFreeTransform, bRotate, bAutoActive;
+    bool        bAltPressed, bShiftPressed, bControlPressed;
 };
 #endif

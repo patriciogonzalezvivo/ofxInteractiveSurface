@@ -32,11 +32,13 @@ ofxSurface::ofxSurface(){
     //
     bEditMode = true;
     bEditMask = false;
-    bFreeTransform = false;
-    bRotate = false;
     
     bActive = false;
     bAutoActive = true;
+    
+    bAltPressed= false;
+    bControlPressed= false;
+    bShiftPressed= false;
     
     // In order to simplify some things I´m using ofPolyline, specialy for making easy
     // to check if the mouse it´s over the surface.
@@ -401,13 +403,14 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
             //
             if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
                 
-                if (bFreeTransform){
-                    textureCorners[selectedTextureCorner].x = ofGetMouseX();
-                    textureCorners[selectedTextureCorner].y = ofGetMouseY();
+                if (e.button == 0 ){
+                    float prevDist = mouseLast.distance(getPos());
+                    float actualDist = mouse.distance(getPos());
                     
-                    doSurfaceToScreenMatrix();
-                    saveSettings(configFile, nId);
-                } else if (bRotate){
+                    float dif = actualDist/prevDist;
+                    
+                    scale(dif);
+                } else if (bShiftPressed){
                     ofVec2f center = getPos();
                     
                     ofVec2f fromCenterTo = mouseLast - center;
@@ -419,13 +422,12 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
                     float dif = actualAngle-prevAngle;
                     
                     rotate(dif);
-                } else {
-                    float prevDist = mouseLast.distance(getPos());
-                    float actualDist = mouse.distance(getPos());
+                } else if (e.button == 2){
+                    textureCorners[selectedTextureCorner].x = ofGetMouseX();
+                    textureCorners[selectedTextureCorner].y = ofGetMouseY();
                     
-                    float dif = actualDist/prevDist;
-                    
-                    scale(dif);
+                    doSurfaceToScreenMatrix();
+                    saveSettings(configFile, nId);
                 }
             } 
             
@@ -482,6 +484,7 @@ void ofxSurface::_mouseReleased(ofMouseEventArgs &e){
 
 //Key Events
 void ofxSurface::_keyPressed(ofKeyEventArgs &e){
+        
     switch (e.key) {
         case 'e':
             bEditMode = !bEditMode;
@@ -493,13 +496,13 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
             bEditMask = !bEditMask;
             break;
         case 't':
-            bFreeTransform = true;
-            break;
-        case 'T':
-            bFreeTransform = !bFreeTransform;
+            bAltPressed= true;
             break;
         case 'r':
-            bRotate = true;
+            bControlPressed= true;
+            break;
+        case 'y':
+            bShiftPressed= true;
             break;
     }
     
@@ -534,7 +537,7 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
             doMask();
             saveSettings(configFile, nId);
         } else if ( !bEditMask && 
-                   (e.key == 'c') ){
+                   (e.key == OF_KEY_F11) ){
             doFrame();
             doSurfaceToScreenMatrix();
             doMask();
@@ -543,25 +546,28 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
     }   
 }
 
-void ofxSurface::doFrame(){
-    textureCorners[0].set(0, 0);
-    textureCorners[1].set(width, 0);
-    textureCorners[2].set(width, height);
-    textureCorners[3].set(0, height);
-}
-
 void ofxSurface::_keyReleased(ofKeyEventArgs &e){
     switch (e.key) {
         case 'm':
             bEditMask = false;
             break;
         case 't':
-            bFreeTransform = false;
+            bAltPressed= false;
             break;
         case 'r':
-            bRotate = false;
+            bControlPressed= false;
+            break;
+        case 'y':
+            bShiftPressed= false;
             break;
     }    
+}
+
+void ofxSurface::doFrame(){
+    textureCorners[0].set(0, 0);
+    textureCorners[1].set(width, 0);
+    textureCorners[2].set(width, height);
+    textureCorners[3].set(0, height);
 }
 
 void ofxSurface::doMask(){
