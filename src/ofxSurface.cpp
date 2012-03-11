@@ -396,18 +396,21 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
     
     if (bEditMode){
         if (!bEditMask){
-            
             // Drag texture corners
             //
             if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
                 
                 if (e.button == 2){
+                    // Deformation
+                    //
                     textureCorners[selectedTextureCorner].x = ofGetMouseX();
                     textureCorners[selectedTextureCorner].y = ofGetMouseY();
                     
                     doSurfaceToScreenMatrix();
                     saveSettings(configFile, nId);
-                } else if ( e.button == 1 ){
+                } else if ( ofGetKeyPressed() ){
+                    // Rotation
+                    //
                     ofVec2f center = getPos();
                     
                     ofVec2f fromCenterTo = mouseLast - center;
@@ -419,13 +422,30 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
                     float dif = actualAngle-prevAngle;
                     
                     rotate(dif);
-                } else {
+                } else if ( e.button == 1 ){
+                    // Centered Scale
+                    //
                     float prevDist = mouseLast.distance(getPos());
                     float actualDist = mouse.distance(getPos());
                     
                     float dif = actualDist/prevDist;
                     
                     scale(dif);            
+                } else {
+                    // Corner Scale
+                    //
+                    ofVec2f center = getPos();
+                    
+                    int  opositCorner = (selectedTextureCorner - 2 < 0)? (4+selectedTextureCorner-2) : (selectedTextureCorner-2);
+                    ofVec2f toOpositCorner = center - textureCorners[opositCorner];  
+                    
+                    float prevDist = mouseLast.distance( textureCorners[opositCorner] );
+                    float actualDist = mouse.distance( textureCorners[opositCorner] );
+                    
+                    float dif = actualDist/prevDist;
+                    
+                    move( textureCorners[opositCorner] + toOpositCorner * dif );
+                    scale(dif); 
                 } 
             
             // Drag all the surface
