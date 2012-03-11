@@ -95,77 +95,80 @@ void ofxSurface::loadSettings( string filePath, int _nId ){
     
     if (XML.loadFile(filePath)){
         maskCorners.clear();
-        XML.pushTag("surface", nId); 
-        
-        XML.pushTag("texture");
-        for(int i = 0; i < 4; i++){
-            XML.pushTag("point",i);
-            textureCorners[i].set(XML.getValue("x", 0.0),XML.getValue("y", 0.0));
+        if (XML.pushTag("surface", nId)){
+            
+            if (XML.pushTag("texture")){
+                for(int i = 0; i < 4; i++){
+                    XML.pushTag("point",i);
+                    textureCorners[i].set(XML.getValue("x", 0.0),XML.getValue("y", 0.0));
+                    XML.popTag();
+                }
+                XML.popTag();
+            }
+            
+            if(XML.pushTag("mask")){
+                int totalMaskCorners = XML.getNumTags("point");
+                if (totalMaskCorners > 0){
+                    maskCorners.clear();
+                }
+                
+                for(int i = 0; i < totalMaskCorners; i++){
+                    XML.pushTag("point",i);
+                    maskCorners.addVertex(XML.getValue("x", 0.0),XML.getValue("y", 0.0));
+                    XML.popTag();
+                }
+                XML.popTag();
+            }
             XML.popTag();
         }
-        XML.popTag();
-        
-        XML.pushTag("mask");
-        int totalMaskCorners = XML.getNumTags("point");
-        if (totalMaskCorners > 0){
-            maskCorners.clear();
-        }
-        
-        for(int i = 0; i < totalMaskCorners; i++){
-            XML.pushTag("point",i);
-            ofPoint newPoint = ofPoint(XML.getValue("x", 0.0),XML.getValue("y", 0.0),0.0);
-            if ((newPoint.x != -1.0) && (newPoint.x != -1.0))
-                maskCorners.addVertex(newPoint);
-            XML.popTag();
-        }
-        XML.popTag();
-        cout << maskCorners.size() << " total masking points" << endl;
-        
-        XML.popTag();
     } else
-        cout << " [ FAIL ]" << endl;
+        cout << "ERROR: ofxSurface::loadSettings couldn't load surface " << nId << " on " << configFile << endl;
 }
 
 void ofxSurface::saveSettings(string filePath, int nId){
     ofxXmlSettings XML;
     
     if (XML.loadFile(filePath)){
-        XML.pushTag("surface", nId); 
-        
-        XML.pushTag("texture");
-        for(int i = 0; i < 4; i++){
-            XML.setValue("point:x",textureCorners[i].x, i);
-            XML.setValue("point:y",textureCorners[i].y, i);
-        }
-        XML.popTag();
-        
-        XML.pushTag("mask");
-        int totalMaskCorners = XML.getNumTags("point");
-        
-        for(int i = 0; i < maskCorners.size(); i++){
-            int tagNum = i;
+        if (XML.pushTag("surface", nId)){
             
-            if (i >= totalMaskCorners)
-                tagNum = XML.addTag("point");
-            
-            XML.setValue("point:x",maskCorners[i].x, tagNum);
-            XML.setValue("point:y",maskCorners[i].y, tagNum);
-        }
-        
-        if (maskCorners.size() < totalMaskCorners){
-            for(int i = maskCorners.size() ; i < totalMaskCorners; i++){
-                XML.setValue("point:x",-1.0, i);
-                XML.setValue("point:y",-1.0, i);
+            if (XML.pushTag("texture")){
+                for(int i = 0; i < 4; i++){
+                    XML.setValue("point:x",textureCorners[i].x, i);
+                    XML.setValue("point:y",textureCorners[i].y, i);
+                }
+                XML.popTag();
             }
+            
+            if (XML.pushTag("mask")){
+                int totalMaskCorners = XML.getNumTags("point");
+                
+                for(int i = 0; i < maskCorners.size(); i++){
+                    int tagNum = i;
+                    
+                    if (i >= totalMaskCorners)
+                        tagNum = XML.addTag("point");
+                    
+                    XML.setValue("point:x",maskCorners[i].x, tagNum);
+                    XML.setValue("point:y",maskCorners[i].y, tagNum);
+                }
+                
+                if (maskCorners.size() < totalMaskCorners){
+                    for(int i = totalMaskCorners; i > maskCorners.size()-1; i--){
+                        XML.removeTag("point",i);
+                    }
+                }
+                
+                doMask();
+                XML.popTag();
+            }
+            
+            XML.popTag();
+            XML.saveFile();
         }
-        
-        doMask();
-        XML.popTag();
-        
-        XML.popTag();
     } else
-        cout << " [ FAIL ]" << endl;
-    XML.saveFile();
+        cout << "ERROR: ofxSurface::saveSettings couldn't save " << nId << " surface on " << configFile << endl;
+    
+    
 }
 
 void ofxSurface::move(ofPoint _pos){
