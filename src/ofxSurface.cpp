@@ -3,7 +3,7 @@
 //  emptyExample
 //
 //  Created by Patricio González Vivo on 3/5/12.
-//  Copyright (c) 2012 PatricioGonzalezVivo.com. All rights reserved.
+//  Copyright (c) 2012 http://www.PatricioGonzalezVivo.com All rights reserved.
 //
 
 #include "ofxSurface.h"
@@ -343,7 +343,6 @@ void ofxSurface::_mousePressed(ofMouseEventArgs &e){
         } else {
             // Editing the mask corners
             //
-            
             bool overDot = false;
             for(int i = 0; i < maskCorners.size(); i++){
                 ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
@@ -484,7 +483,7 @@ void ofxSurface::_mouseReleased(ofMouseEventArgs &e){
 void ofxSurface::_keyPressed(ofKeyEventArgs &e){
         
     switch (e.key) {
-        case 'e':
+        case OF_KEY_F3:
             bEditMode = !bEditMode;
             break;
         case 'm':

@@ -3,7 +3,7 @@
 //  ofxSurface
 //
 //  Created by Patricio González Vivo on 3/5/12.
-//  Copyright (c) 2012 PatricioGonzalezVivo.com. All rights reserved.
+//  Copyright (c) 2012 http://www.PatricioGonzalezVivo.com All rights reserved.
 //
 
 #ifndef OFXSURFACE
