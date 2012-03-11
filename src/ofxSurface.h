@@ -78,7 +78,6 @@ protected:
     string      configFile;
     ofVec2f     mouseLast;
     float       x, y;
-    int         width, height, nId; 
-    bool        bAltPressed, bShiftPressed, bControlPressed;
+    int         width, height, nId;
 };
 #endif

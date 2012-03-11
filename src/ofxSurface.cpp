@@ -36,10 +36,6 @@ ofxSurface::ofxSurface(){
     bActive = false;
     bAutoActive = true;
     
-    bAltPressed= false;
-    bControlPressed= false;
-    bShiftPressed= false;
-    
     // In order to simplify some things I´m using ofPolyline, specialy for making easy
     // to check if the mouse it´s over the surface.
     // So each textureCorner have an absolute value. It could be improve using normalized
@@ -403,14 +399,13 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
             //
             if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
                 
-                if (e.button == 0 ){
-                    float prevDist = mouseLast.distance(getPos());
-                    float actualDist = mouse.distance(getPos());
+                if (e.button == 2){
+                    textureCorners[selectedTextureCorner].x = ofGetMouseX();
+                    textureCorners[selectedTextureCorner].y = ofGetMouseY();
                     
-                    float dif = actualDist/prevDist;
-                    
-                    scale(dif);
-                } else if (bShiftPressed){
+                    doSurfaceToScreenMatrix();
+                    saveSettings(configFile, nId);
+                } else if ( e.button == 1 ){
                     ofVec2f center = getPos();
                     
                     ofVec2f fromCenterTo = mouseLast - center;
@@ -422,18 +417,18 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
                     float dif = actualAngle-prevAngle;
                     
                     rotate(dif);
-                } else if (e.button == 2){
-                    textureCorners[selectedTextureCorner].x = ofGetMouseX();
-                    textureCorners[selectedTextureCorner].y = ofGetMouseY();
+                } else {
+                    float prevDist = mouseLast.distance(getPos());
+                    float actualDist = mouse.distance(getPos());
                     
-                    doSurfaceToScreenMatrix();
-                    saveSettings(configFile, nId);
-                }
-            } 
+                    float dif = actualDist/prevDist;
+                    
+                    scale(dif);            
+                } 
             
             // Drag all the surface
             //
-            else if ( bActive ){
+            } else if ( bActive ){
                 for (int i = 0; i < 4; i++){
                     textureCorners[i] += mouse-mouseLast;
                 }
@@ -495,15 +490,6 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
         case 'M':
             bEditMask = !bEditMask;
             break;
-        case 't':
-            bAltPressed= true;
-            break;
-        case 'r':
-            bControlPressed= true;
-            break;
-        case 'y':
-            bShiftPressed= true;
-            break;
     }
     
     if (bActive && bEditMode) {
@@ -537,7 +523,7 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
             doMask();
             saveSettings(configFile, nId);
         } else if ( !bEditMask && 
-                   (e.key == OF_KEY_F11) ){
+                   (e.key == OF_KEY_F2) ){
             doFrame();
             doSurfaceToScreenMatrix();
             doMask();
@@ -550,15 +536,6 @@ void ofxSurface::_keyReleased(ofKeyEventArgs &e){
     switch (e.key) {
         case 'm':
             bEditMask = false;
-            break;
-        case 't':
-            bAltPressed= false;
-            break;
-        case 'r':
-            bControlPressed= false;
-            break;
-        case 'y':
-            bShiftPressed= false;
             break;
     }    
 }
