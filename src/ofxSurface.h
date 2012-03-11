@@ -40,7 +40,7 @@ public:
     bool    bActive, bEditMode, bEditMask, bAutoActive;
     
 protected:
-    void    doFrame();
+    virtual void doFrame();
     void    doMask();                       // Update the mask
     void    doSurfaceToScreenMatrix();      // Update the SurfaceToScreen transformation matrix
     void    doScreenToSurfaceMatrix();      // Update the ScreenToSurface transformation matrix

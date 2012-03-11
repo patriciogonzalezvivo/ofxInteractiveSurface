@@ -73,10 +73,10 @@ uniform float maskOpacity;\n\
 void main (void){\n\
     vec2 pos = gl_TexCoord[0].st;\n\
     \n\
-    vec3 src = texture2DRect(tex0, pos).rgb;\n\
+    vec4 src = texture2DRect(tex0, pos);\n\
     float mask = texture2DRect(maskTex, pos).r;\n\
     \n\
-    gl_FragColor = vec4( src * texOpacity , clamp(mask, maskOpacity, 1.0));\n\
+    gl_FragColor = vec4( src.rgb * texOpacity , clamp( min(src.a,mask) , maskOpacity, 1.0));\n\
 }\n\
 \n";
     maskShader.setupShaderFromSource(GL_FRAGMENT_SHADER, shaderProgram);    // Load ...
