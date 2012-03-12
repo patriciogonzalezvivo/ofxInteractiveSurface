@@ -20,13 +20,14 @@ public:
     // The nId number it´s the name of the instance on the .xml file. This
     // allows saving multiples surface parameters in one single config file
     //
-    void    loadSettings( string _configFile = "config.xml", int _nId = -1);
-    void    saveSettings( string _configFile = "config.xml", int _nId = -1);
+    void    loadSettings(int _nTag, string _configFile = "none");
+    void    saveSettings(string _configFile = "none");
     
     //void    setAutoActivation( bool _autoActive);
     
-    bool    isOver(ofPoint _loc){ return textureCorners.inside(_loc); };
-    ofPoint getPos(){ return ofPoint(x,y); };
+    bool    isOver(ofPoint _loc) { return textureCorners.inside(_loc); };
+    int     getId() const { return nId; };
+    ofPoint getPos() const { return ofPoint(x,y); };
     
     void    move(ofPoint _pos);
     void    scale(float _scale);
@@ -76,6 +77,7 @@ protected:
     //
     string      configFile;
     float       x, y;
-    int         width, height, nId;
+    int         width, height;
+    int         nId;
 };
 #endif

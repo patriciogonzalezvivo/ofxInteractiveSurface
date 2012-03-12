@@ -81,33 +81,48 @@ void main (void){\n\
 \n";
     maskShader.setupShaderFromSource(GL_FRAGMENT_SHADER, shaderProgram);    // Load ...
     maskShader.linkProgram();                                               // ... and compile the shader
+    
+    configFile = "config.xml";
 }
 
-void ofxSurface::loadSettings( string filePath, int _nId ){
+void ofxSurface::loadSettings( int _nTag, string _configFile){
     ofxXmlSettings XML;
     
-    configFile = filePath;
+    if (_configFile != "none")
+        configFile = _configFile;
     
-    if (_nId != -1)
-        nId = _nId;
-    else
-        nId = 0;
-    
-    if (XML.loadFile(filePath)){
-        maskCorners.clear();
-        if (XML.pushTag("surface", nId)){
+    // Open the xml file
+    //
+    if (XML.loadFile(configFile)){
+        if (XML.pushTag("surface", _nTag)){
             
+            // Load the type and do what it have to 
+            //
+            nId = XML.getValue("id", 0);
+                
+            // The 4 texture coordenates are absolute and from them it makes
+            // two matrix transformation one from The screen to the workd and biceversa 
+            //
             if (XML.pushTag("texture")){
                 for(int i = 0; i < 4; i++){
                     XML.pushTag("point",i);
                     textureCorners[i].set(XML.getValue("x", 0.0),XML.getValue("y", 0.0));
                     XML.popTag();
                 }
+                doScreenToSurfaceMatrix();
+                doSurfaceToScreenMatrix();
                 XML.popTag();
             }
             
+            // Then it«s the mask path, made from normalized points that then will fix to
+            // the texture proportions
+            //
             if(XML.pushTag("mask")){
+                
                 int totalMaskCorners = XML.getNumTags("point");
+                
+                // Clean the maskCorners before loading new-onces
+                //
                 if (totalMaskCorners > 0){
                     maskCorners.clear();
                 }
@@ -118,52 +133,73 @@ void ofxSurface::loadSettings( string filePath, int _nId ){
                     XML.popTag();
                 }
                 XML.popTag();
+                maskFbo.allocate(width, height);
+                doMask();
             }
+            
+            // loaded or not it will decent one level to the root
+            //
             XML.popTag();
         }
     } else
         cout << "ERROR: ofxSurface::loadSettings couldn't load surface " << nId << " on " << configFile << endl;
 }
 
-void ofxSurface::saveSettings(string filePath, int nId){
+void ofxSurface::saveSettings(string _configFile){
     ofxXmlSettings XML;
     
-    if (XML.loadFile(filePath)){
-        if (XML.pushTag("surface", nId)){
-            
-            if (XML.pushTag("texture")){
-                for(int i = 0; i < 4; i++){
-                    XML.setValue("point:x",textureCorners[i].x, i);
-                    XML.setValue("point:y",textureCorners[i].y, i);
-                }
-                XML.popTag();
-            }
-            
-            if (XML.pushTag("mask")){
-                int totalMaskCorners = XML.getNumTags("point");
+    if (_configFile != "none")
+        configFile = _configFile;
+    
+    if (XML.loadFile(configFile)){
+        // Get the total number of surfaces...
+        //
+        int totalSurfaces = XML.getNumTags("surface");
+        
+        // ... and search for the right id for loading
+        //
+        for (int i = 0; i < totalSurfaces; i++){
+            if (XML.pushTag("surface", i)){
                 
-                for(int i = 0; i < maskCorners.size(); i++){
-                    int tagNum = i;
+                // Once it found the right surface that match the id
+                // load the data
+                //
+                if ( XML.getValue("id", 0) == nId){
+                    if (XML.pushTag("texture")){
+                        for(int i = 0; i < 4; i++){
+                            XML.setValue("point:x",textureCorners[i].x, i);
+                            XML.setValue("point:y",textureCorners[i].y, i);
+                        }
+                        XML.popTag();
+                    }
                     
-                    if (i >= totalMaskCorners)
-                        tagNum = XML.addTag("point");
-                    
-                    XML.setValue("point:x",maskCorners[i].x, tagNum);
-                    XML.setValue("point:y",maskCorners[i].y, tagNum);
-                }
-                
-                if (maskCorners.size() < totalMaskCorners){
-                    for(int i = totalMaskCorners; i > maskCorners.size()-1; i--){
-                        XML.removeTag("point",i);
+                    if (XML.pushTag("mask")){
+                        int totalMaskCorners = XML.getNumTags("point");
+                        
+                        for(int i = 0; i < maskCorners.size(); i++){
+                            int tagNum = i;
+                            
+                            if (i >= totalMaskCorners)
+                                tagNum = XML.addTag("point");
+                            
+                            XML.setValue("point:x",maskCorners[i].x, tagNum);
+                            XML.setValue("point:y",maskCorners[i].y, tagNum);
+                        }
+                        
+                        if (maskCorners.size() < totalMaskCorners){
+                            for(int i = totalMaskCorners; i > maskCorners.size()-1; i--){
+                                XML.removeTag("point",i);
+                            }
+                        }
+                        
+                        doMask();
+                        XML.popTag();
                     }
                 }
                 
-                doMask();
                 XML.popTag();
+                XML.saveFile();
             }
-            
-            XML.popTag();
-            XML.saveFile();
         }
     } else
         cout << "ERROR: ofxSurface::saveSettings couldn't save " << nId << " surface on " << configFile << endl;
@@ -286,9 +322,6 @@ void ofxSurface::draw( ofTexture &texture ){
                 //
                 ofLine(textureCorners[i].x, textureCorners[i].y, textureCorners[(i+1)%4].x, textureCorners[(i+1)%4].y);
             }
-            
-            ofLine(x-5, y, x+5, y);
-            ofLine(x, y-5, x, y);
         } else {
             // Draw dragables mask corners
             //
@@ -408,7 +441,7 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
                     textureCorners[selectedTextureCorner].y = ofGetMouseY();
                     
                     doSurfaceToScreenMatrix();
-                    saveSettings(configFile, nId);
+                    saveSettings(configFile);
                 } else if ( ofGetKeyPressed() ){
                     // Rotation
                     //
@@ -457,7 +490,7 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
                 }
                 
                 doSurfaceToScreenMatrix();
-                saveSettings(configFile, nId);
+                saveSettings(configFile);
                 mouseLast = mouse;
             }
         } else {
@@ -479,7 +512,7 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
                 }
             }
             doMask();
-            saveSettings(configFile, nId);
+            saveSettings(configFile);
         }
     }
     mouseLast = ofVec2f(e.x, e.y);
@@ -490,11 +523,11 @@ void ofxSurface::_mouseReleased(ofMouseEventArgs &e){
         if (!bEditMask){
             if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
                 doSurfaceToScreenMatrix();
-                saveSettings(configFile, nId);
+                saveSettings(configFile);
                 selectedTextureCorner = -1;
             }
         } else {
-            saveSettings(configFile, nId);
+            saveSettings(configFile);
             selectedMaskCorner = -1;
         }
     }
@@ -526,7 +559,7 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
             maskCorners.getVertices().erase(maskCorners.getVertices().begin()+ selectedMaskCorner );
             selectedMaskCorner = -1;
             doMask();
-            saveSettings(configFile, nId);
+            saveSettings(configFile);
         }
         
         // Reset all the mask or the texture
@@ -544,13 +577,13 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
             newPoint.set(0.0,1.0,0.0);
             maskCorners.addVertex(newPoint);
             doMask();
-            saveSettings(configFile, nId);
+            saveSettings(configFile);
         } else if ( !bEditMask && 
                    (e.key == OF_KEY_F2) ){
             doFrame();
             doSurfaceToScreenMatrix();
             doMask();
-            saveSettings(configFile, nId);
+            saveSettings(configFile);
         }
     }   
 }
