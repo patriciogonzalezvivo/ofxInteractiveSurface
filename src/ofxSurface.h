@@ -35,8 +35,7 @@ public:
     // Load and Draw ( super simple )
     //
     void    draw( ofTexture &texture );
-    
-    
+
     bool    bActive, bEditMode, bEditMask, bAutoActive;
     
 protected:
@@ -76,7 +75,6 @@ protected:
     // General Variables
     //
     string      configFile;
-    ofVec2f     mouseLast;
     float       x, y;
     int         width, height, nId;
 };

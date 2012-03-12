@@ -323,10 +323,10 @@ void ofxSurface::draw( ofTexture &texture ){
 
 //Mouse Events
 void ofxSurface::_mouseMoved(ofMouseEventArgs &e){
-    mouseLast = ofVec2f(e.x, e.y);
+    ofVec2f mouse = ofVec2f(e.x, e.y);
     
     if (bAutoActive)
-        bActive = textureCorners.inside(mouseLast);
+        bActive = textureCorners.inside(mouse);
 }
 
 void ofxSurface::_mousePressed(ofMouseEventArgs &e){
@@ -392,7 +392,8 @@ void ofxSurface::_mousePressed(ofMouseEventArgs &e){
 }
 
 void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
-    ofVec3f mouse = ofVec3f(e.x, e.y, 0.0);
+    ofVec3f mouse = ofVec3f(e.x, e.y,0);
+    ofVec3f mouseLast = ofVec3f(ofGetPreviousMouseX(),ofGetPreviousMouseY(),0);
     
     if (bEditMode){
         if (!bEditMask){
