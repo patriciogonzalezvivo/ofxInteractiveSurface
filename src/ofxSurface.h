@@ -10,6 +10,7 @@
 #define OFXSURFACE
 
 #include "ofMain.h"
+#include "ofxTitleBar.h"
 #include "ofxXmlSettings.h"
 
 class ofxSurface {
@@ -23,8 +24,6 @@ public:
     void    loadSettings(int _nTag, string _configFile = "none");
     void    saveSettings(string _configFile = "none");
     
-    //void    setAutoActivation( bool _autoActive);
-    
     bool    isOver(ofPoint _loc) { return textureCorners.inside(_loc); };
     int     getId() const { return nId; };
     ofPoint getPos() const { return ofPoint(x,y); };
@@ -36,11 +35,16 @@ public:
     // Load and Draw ( super simple )
     //
     void    draw( ofTexture &texture );
+    
+    ofxTitleBar *title;
 
-    bool    bActive, bEditMode, bEditMask, bAutoActive;
+    bool    bActive, bEditMode, bEditMask, bAutoActive, bVisible;
     
 protected:
     virtual void doFrame();
+    virtual void doBox();
+    void    doTitleBar();
+    
     void    doMask();                       // Update the mask
     void    doSurfaceToScreenMatrix();      // Update the SurfaceToScreen transformation matrix
     void    doScreenToSurfaceMatrix();      // Update the ScreenToSurface transformation matrix
@@ -53,7 +57,9 @@ protected:
     void    _mouseDragged(ofMouseEventArgs &e);
     void    _mouseReleased(ofMouseEventArgs &e);
     void    _keyPressed(ofKeyEventArgs &e);
-    void    _keyReleased(ofKeyEventArgs &e);
+    
+    void    _resetSurface( int &_nId );
+    
     
     // Mask variables
     //
@@ -75,6 +81,7 @@ protected:
         
     // General Variables
     //
+    ofRectangle box;
     string      configFile;
     float       x, y;
     int         width, height;

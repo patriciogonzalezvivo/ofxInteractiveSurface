@@ -17,7 +17,6 @@ ofxSurface::ofxSurface(){
 	ofAddListener(ofEvents().mouseDragged, this, &ofxSurface::_mouseDragged);
 	ofAddListener(ofEvents().mouseReleased, this, &ofxSurface::_mouseReleased);
 	ofAddListener(ofEvents().keyPressed, this, &ofxSurface::_keyPressed);
-	ofAddListener(ofEvents().keyReleased, this, &ofxSurface::_keyReleased);
     
     // This two files handle the selected points of the mask or texture corners
     // if it´s -1 means nothing is selected, other wise the number it´s the position
@@ -32,7 +31,7 @@ ofxSurface::ofxSurface(){
     //
     bEditMode = true;
     bEditMask = false;
-    
+    bVisible = true;
     bActive = false;
     bAutoActive = true;
     
@@ -83,8 +82,12 @@ void main (void){\n\
     maskShader.linkProgram();                                               // ... and compile the shader
     
     configFile = "config.xml";
+    title = NULL;
+    nId = -1;
+    doTitleBar();
 }
 
+// ------------------------------------------------------------- SETUP
 void ofxSurface::loadSettings( int _nTag, string _configFile){
     ofxXmlSettings XML;
     
@@ -111,6 +114,7 @@ void ofxSurface::loadSettings( int _nTag, string _configFile){
                 }
                 doScreenToSurfaceMatrix();
                 doSurfaceToScreenMatrix();
+                doBox();
                 XML.popTag();
             }
             
@@ -174,21 +178,24 @@ void ofxSurface::saveSettings(string _configFile){
                     }
                     
                     if (XML.pushTag("mask")){
-                        int totalMaskCorners = XML.getNumTags("point");
+                        int totalSavedPoints = XML.getNumTags("point");
                         
-                        for(int i = 0; i < maskCorners.size(); i++){
-                            int tagNum = i;
+                        for(int j = 0; j < maskCorners.size(); j++){
+                            int tagNum = j;
                             
-                            if (i >= totalMaskCorners)
+                            if (i >= totalSavedPoints)
                                 tagNum = XML.addTag("point");
                             
-                            XML.setValue("point:x",maskCorners[i].x, tagNum);
-                            XML.setValue("point:y",maskCorners[i].y, tagNum);
+                            XML.setValue("point:x",maskCorners[j].x, tagNum);
+                            XML.setValue("point:y",maskCorners[j].y, tagNum);
                         }
                         
-                        if (maskCorners.size() < totalMaskCorners){
-                            for(int i = totalMaskCorners; i > maskCorners.size()-1; i--){
-                                XML.removeTag("point",i);
+                        int totalCorners = maskCorners.size();
+                        totalSavedPoints = XML.getNumTags("point");
+                        
+                        if ( totalCorners < totalSavedPoints){
+                            for(int j = totalSavedPoints; j > totalCorners; j--){
+                                XML.removeTag("point",j-1);
                             }
                         }
                         
@@ -207,6 +214,116 @@ void ofxSurface::saveSettings(string _configFile){
     
 }
 
+// ------------------------------------------------------ LOOPS
+//
+void ofxSurface::draw( ofTexture &texture ){
+    if ( bEditMode || bVisible ){
+        // If the texture change or it´s new it will update some parameters
+        // like the size of the FBO, de mask and the matrix
+        //
+        if ((width != texture.getWidth()) ||
+            (height != texture.getHeight()) ){
+            width = texture.getWidth();
+            height = texture.getHeight();
+            
+            maskFbo.allocate(width,height);
+            doMask();
+            doSurfaceToScreenMatrix();
+        }
+        
+        //  Here is where the magic happends
+        //  Make the matrix multiplication and mask the texture
+        ofPushMatrix();
+        float texOpacity = 0.0;
+        float maskOpacity = 0.0;
+        
+        if ( textureCorners.inside(ofGetMouseX(), ofGetMouseY()) && (bEditMode)){
+            texOpacity = 1.0;
+            maskOpacity = 0.2;
+        } else if (!bEditMode){
+            texOpacity = 1.0;
+            maskOpacity = 0.0;
+        } else {
+            texOpacity = 0.8;
+            maskOpacity = 0.0;
+        }
+        
+        // Matrix multiplication: rotates, translate and resize to get the right perspective
+        //
+        glMultMatrixf(glMatrix);
+        
+        // Active the alpha-masking shader
+        //
+        maskShader.begin();
+        maskShader.setUniformTexture("maskTex", maskFbo.getTextureReference(), 1 );
+        maskShader.setUniform1f("texOpacity", texOpacity);
+        maskShader.setUniform1f("maskOpacity", maskOpacity);
+        
+        // Draw the texture (image, video, Fbo, etc)
+        //
+        texture.draw(0,0);
+        
+        // Close and re-set everything like nothing happend
+        //
+        maskShader.end();
+        ofPopMatrix();
+    }
+
+    // This just draw the circles and lines
+    //
+    if (bEditMode){
+        ofPushStyle();
+        if (title != NULL)
+            title->draw();
+        
+        if ( !bEditMask ){
+            ofFill();
+            // Draw dragables texture corners
+            //
+            for(int i = 0; i < 4; i++){
+                if ( ( selectedTextureCorner == i) || ( ofDist(ofGetMouseX(), ofGetMouseY(), textureCorners[i].x, textureCorners[i].y) <= 4 ) ) ofSetColor(200,255);
+                else ofSetColor(200,100);
+                    
+                ofRect(textureCorners[i].x-4,textureCorners[i].y-4, 8,8);
+                
+                // Draw contour Line
+                //
+                ofLine(textureCorners[i].x, textureCorners[i].y, textureCorners[(i+1)%4].x, textureCorners[(i+1)%4].y);
+            }
+        } else {
+            // Draw dragables mask corners
+            //
+            for(int i = 0; i < maskCorners.size(); i++){
+                ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
+                pos = surfaceToScreenMatrix * pos;
+                
+                if ( (selectedMaskCorner == i) || ( ofDist(ofGetMouseX(), ofGetMouseY(), pos.x, pos.y) <= 4 ) ) {
+                    ofSetColor(255,255);
+                    ofCircle( pos, 4);
+                    ofSetColor(255,100);
+                    ofFill();
+                } else {
+                    ofNoFill();
+                    ofSetColor(255,100);
+                }
+                    
+                ofCircle( pos, 4);
+                
+                // Draw contour mask line
+                //
+                ofSetColor(255,200);
+                ofVec3f nextPos = ofVec3f(maskCorners[(i+1)%maskCorners.size()].x*width, 
+                                          maskCorners[(i+1)%maskCorners.size()].y*height, 0.0);
+                nextPos = surfaceToScreenMatrix * nextPos;
+                ofLine(pos.x,pos.y,nextPos.x,nextPos.y);
+            }
+        }
+        ofPopStyle();
+    }
+}
+
+// -------------------------------------------------------- ACTIONS
+//
 void ofxSurface::move(ofPoint _pos){
     ofVec2f diff = _pos - getPos();
     
@@ -251,349 +368,18 @@ void ofxSurface::rotate(float _rotAngle){
     doSurfaceToScreenMatrix();
 }
 
-void ofxSurface::draw( ofTexture &texture ){
+void ofxSurface::doTitleBar(){
+    if ( title != NULL)
+        delete title;
     
-    // If the texture change or it´s new it will update some parameters
-    // like the size of the FBO, de mask and the matrix
-    //
-    if ((width != texture.getWidth()) ||
-        (height != texture.getHeight()) ){
-        width = texture.getWidth();
-        height = texture.getHeight();
-        
-        maskFbo.allocate(width,height);
-        doMask();
-        doSurfaceToScreenMatrix();
-    }
-    
-    //  Here is where the magic happends
-    //  Make the matrix multiplication and mask the texture
-    ofPushMatrix();
-    float texOpacity = 0.0;
-    float maskOpacity = 0.0;
-    
-    if ( textureCorners.inside(ofGetMouseX(), ofGetMouseY()) && (bEditMode)){
-        texOpacity = 1.0;
-        maskOpacity = 0.2;
-    } else if (!bEditMode){
-        texOpacity = 1.0;
-        maskOpacity = 0.0;
-    } else {
-        texOpacity = 0.8;
-        maskOpacity = 0.0;
-    }
-    
-    // Matrix multiplication: rotates, translate and resize to get the right perspective
-    //
-    glMultMatrixf(glMatrix);
-    
-    // Active the alpha-masking shader
-    //
-    maskShader.begin();
-    maskShader.setUniformTexture("maskTex", maskFbo.getTextureReference(), 1 );
-    maskShader.setUniform1f("texOpacity", texOpacity);
-    maskShader.setUniform1f("maskOpacity", maskOpacity);
-    
-    // Draw the texture (image, video, Fbo, etc)
-    //
-    texture.draw(0,0);
-    
-    // Close and re-set everything like nothing happend
-    //
-    maskShader.end();
-    ofPopMatrix();
-    
-    
-    // This just draw the circles and lines
-    //
-    ofPushStyle();
-    if (bEditMode){
-        if ( !bEditMask ){
-            ofFill();
-            // Draw dragables texture corners
-            //
-            for(int i = 0; i < 4; i++){
-                if ( ( selectedTextureCorner == i) || ( ofDist(ofGetMouseX(), ofGetMouseY(), textureCorners[i].x, textureCorners[i].y) <= 5 ) ) ofSetColor(200,255);
-                else ofSetColor(200,100);
-                    
-                ofRect(textureCorners[i].x-5,textureCorners[i].y-5, 10,10);
-                
-                // Draw contour Line
-                //
-                ofLine(textureCorners[i].x, textureCorners[i].y, textureCorners[(i+1)%4].x, textureCorners[(i+1)%4].y);
-            }
-        } else {
-            // Draw dragables mask corners
-            //
-            for(int i = 0; i < maskCorners.size(); i++){
-                ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
-                pos = surfaceToScreenMatrix * pos;
-                
-                if ( (selectedMaskCorner == i) || ( ofDist(ofGetMouseX(), ofGetMouseY(), pos.x, pos.y) <= 5 ) ) {
-                    ofSetColor(255,255);
-                    ofCircle( pos, 5);
-                    ofSetColor(255,100);
-                    ofFill();
-                } else {
-                    ofNoFill();
-                    ofSetColor(255,100);
-                }
-                    
-                ofCircle( pos, 5);
-                
-                // Draw contour mask line
-                //
-                ofSetColor(255,200);
-                ofVec3f nextPos = ofVec3f(maskCorners[(i+1)%maskCorners.size()].x*width, 
-                                          maskCorners[(i+1)%maskCorners.size()].y*height, 0.0);
-                nextPos = surfaceToScreenMatrix * nextPos;
-                ofLine(pos.x,pos.y,nextPos.x,nextPos.y);
-            }
-        }
-    }
-    ofPopStyle();
+    title = new ofxTitleBar(&box, &nId);
+    title->addButton('m', &bEditMask, TOGGLE_BUTTON);
+    title->addButton('v', &bVisible, TOGGLE_BUTTON);
+    ofAddListener( title->reset , this, &ofxSurface::_resetSurface);
 }
 
-//Mouse Events
-void ofxSurface::_mouseMoved(ofMouseEventArgs &e){
-    ofVec2f mouse = ofVec2f(e.x, e.y);
-    
-    if (bAutoActive)
-        bActive = textureCorners.inside(mouse);
-}
-
-void ofxSurface::_mousePressed(ofMouseEventArgs &e){
-    ofVec3f mouse = ofVec3f(e.x, e.y, 0.0);
-    
-    if (bEditMode){
-        if (!bEditMask){
-            // Editing the texture corners
-            //
-            for(int i = 0; i < 4; i++){
-                if ( ofDist(e.x, e.y, textureCorners[i].x, textureCorners[i].y) <= 10 )
-                    selectedTextureCorner = i;
-            }
-        } else {
-            // Editing the mask corners
-            //
-            bool overDot = false;
-            for(int i = 0; i < maskCorners.size(); i++){
-                ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
-                pos = surfaceToScreenMatrix * pos;
-                
-                if ( ofDist(e.x, e.y, pos.x, pos.y) <= 10 ){
-                    selectedMaskCorner = i;
-                    overDot = true;
-                }
-            }
-            
-            // Add new Dot if it´s over the line
-            //
-            if (!overDot && bActive ){
-                
-                doScreenToSurfaceMatrix();
-                mouse = screenToSurfaceMatrix * mouse;
-                mouse.x = mouse.x / width;
-                mouse.y = mouse.y / height;
-                
-                int addNew = -1;
-                
-                // Search for the right placer to incert the point in the array
-                //
-                for (int i = 0; i < maskCorners.size(); i++){
-                    int next = (i+1)%maskCorners.size();
-                    
-                    ofVec2f AtoM = mouse - maskCorners[i];
-                    ofVec2f AtoB = maskCorners[next] - maskCorners[i];
-                    
-                    float a = atan2f(AtoM.x, AtoM.y);
-                    float b = atan2f(AtoB.x, AtoB.y);
-                    
-                    if ( abs(a - b) < 0.05){
-                        addNew = next;
-                    }
-                }
-                
-                if (addNew >= 0 ){
-                    maskCorners.getVertices().insert( maskCorners.getVertices().begin()+addNew, mouse);
-                    selectedMaskCorner = addNew;
-                }
-                
-            }
-        }
-    }
-}
-
-void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
-    ofVec3f mouse = ofVec3f(e.x, e.y,0);
-    ofVec3f mouseLast = ofVec3f(ofGetPreviousMouseX(),ofGetPreviousMouseY(),0);
-    
-    if (bEditMode){
-        if (!bEditMask){
-            // Drag texture corners
-            //
-            if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
-                
-                if (e.button == 2){
-                    // Deformation
-                    //
-                    textureCorners[selectedTextureCorner].x = ofGetMouseX();
-                    textureCorners[selectedTextureCorner].y = ofGetMouseY();
-                    
-                    doSurfaceToScreenMatrix();
-                    saveSettings(configFile);
-                } else if ( ofGetKeyPressed() ){
-                    // Rotation
-                    //
-                    ofVec2f center = getPos();
-                    
-                    ofVec2f fromCenterTo = mouseLast - center;
-                    float prevAngle = -1.0*atan2f(fromCenterTo.x,fromCenterTo.y)+(PI/2);
-                    
-                    fromCenterTo = mouse - center;
-                    float actualAngle = -1.0*atan2f(fromCenterTo.x,fromCenterTo.y)+(PI/2);
-                    
-                    float dif = actualAngle-prevAngle;
-                    
-                    rotate(dif);
-                } else if ( e.button == 1 ){
-                    // Centered Scale
-                    //
-                    float prevDist = mouseLast.distance(getPos());
-                    float actualDist = mouse.distance(getPos());
-                    
-                    float dif = actualDist/prevDist;
-                    
-                    scale(dif);            
-                } else {
-                    // Corner Scale
-                    //
-                    ofVec2f center = getPos();
-                    
-                    int  opositCorner = (selectedTextureCorner - 2 < 0)? (4+selectedTextureCorner-2) : (selectedTextureCorner-2);
-                    ofVec2f toOpositCorner = center - textureCorners[opositCorner];  
-                    
-                    float prevDist = mouseLast.distance( textureCorners[opositCorner] );
-                    float actualDist = mouse.distance( textureCorners[opositCorner] );
-                    
-                    float dif = actualDist/prevDist;
-                    
-                    move( textureCorners[opositCorner] + toOpositCorner * dif );
-                    scale(dif); 
-                } 
-            
-            // Drag all the surface
-            //
-            } else if ( bActive ){
-                for (int i = 0; i < 4; i++){
-                    textureCorners[i] += mouse-mouseLast;
-                }
-                
-                doSurfaceToScreenMatrix();
-                saveSettings(configFile);
-                mouseLast = mouse;
-            }
-        } else {
-            
-            // Drag mask points
-            //
-            for(int i = 0; i < maskCorners.size(); i++){
-                ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
-                pos = surfaceToScreenMatrix * pos;
-                
-                if ((selectedMaskCorner >= 0) && (selectedMaskCorner < maskCorners.size() )){
-                    ofVec3f newPos = ofVec3f(mouse.x, mouse.y, 0.0);
-                    doScreenToSurfaceMatrix();
-                    newPos = screenToSurfaceMatrix * mouse;
-                    newPos.x = ofClamp(newPos.x / width, 0.0, 1.0);
-                    newPos.y = ofClamp(newPos.y / height, 0.0, 1.0);
-                    
-                    maskCorners[selectedMaskCorner] = newPos;
-                }
-            }
-            doMask();
-            saveSettings(configFile);
-        }
-    }
-    mouseLast = ofVec2f(e.x, e.y);
-}
-
-void ofxSurface::_mouseReleased(ofMouseEventArgs &e){
-    if (bEditMode){
-        if (!bEditMask){
-            if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
-                doSurfaceToScreenMatrix();
-                saveSettings(configFile);
-                selectedTextureCorner = -1;
-            }
-        } else {
-            saveSettings(configFile);
-            selectedMaskCorner = -1;
-        }
-    }
-}
-
-//Key Events
-void ofxSurface::_keyPressed(ofKeyEventArgs &e){
-        
-    switch (e.key) {
-        case OF_KEY_F3:
-            bEditMode = !bEditMode;
-            break;
-        case 'm':
-            bEditMask = true;
-            break;
-        case 'M':
-            bEditMask = !bEditMask;
-            break;
-    }
-    
-    if (bActive && bEditMode) {
-
-        // Delete the selected mask point
-        //
-        if ( bEditMask && 
-            (e.key == 'd') && 
-            (selectedMaskCorner >= 0) && 
-            (selectedMaskCorner < maskCorners.size() ) ){
-            maskCorners.getVertices().erase(maskCorners.getVertices().begin()+ selectedMaskCorner );
-            selectedMaskCorner = -1;
-            doMask();
-            saveSettings(configFile);
-        }
-        
-        // Reset all the mask or the texture
-        //
-        if ( bEditMask && 
-            (e.key == 'c') ){
-            maskCorners.clear();
-            selectedMaskCorner = -1;
-            ofPoint newPoint = ofPoint(0.0,0.0,0.0);
-            maskCorners.addVertex(newPoint);
-            newPoint.set(1.0,0.0,0.0);
-            maskCorners.addVertex(newPoint);
-            newPoint.set(1.0,1.0,0.0);
-            maskCorners.addVertex(newPoint);
-            newPoint.set(0.0,1.0,0.0);
-            maskCorners.addVertex(newPoint);
-            doMask();
-            saveSettings(configFile);
-        } else if ( !bEditMask && 
-                   (e.key == OF_KEY_F2) ){
-            doFrame();
-            doSurfaceToScreenMatrix();
-            doMask();
-            saveSettings(configFile);
-        }
-    }   
-}
-
-void ofxSurface::_keyReleased(ofKeyEventArgs &e){
-    switch (e.key) {
-        case 'm':
-            bEditMask = false;
-            break;
-    }    
+void ofxSurface::doBox(){
+    box = textureCorners.getBoundingBox();
 }
 
 void ofxSurface::doFrame(){
@@ -671,33 +457,33 @@ void ofxSurface::doSurfaceToScreenMatrix(){
     // in the last column of the original matrix.
     // opengl needs the transposed 4x4 matrix:
     float aux_H[]= {P[0][8],P[3][8],0,P[6][8], // h11  h21 0 h31
-                    P[1][8],P[4][8],0,P[7][8], // h12  h22 0 h32
-                    0      ,      0,0,0,       // 0    0   0 0
-                    P[2][8],P[5][8],0,1        // h13  h23 0 h33
-                    };                          
+        P[1][8],P[4][8],0,P[7][8], // h12  h22 0 h32
+        0      ,      0,0,0,       // 0    0   0 0
+        P[2][8],P[5][8],0,1        // h13  h23 0 h33
+    };                          
     
     for(int i=0; i<16; i++) 
         glMatrix[i] = aux_H[i];
     
-     surfaceToScreenMatrix(0,0)=P[0][8];
-     surfaceToScreenMatrix(0,1)=P[1][8];
-     surfaceToScreenMatrix(0,2)=0;
-     surfaceToScreenMatrix(0,3)=P[2][8];
-     
-     surfaceToScreenMatrix(1,0)=P[3][8];
-     surfaceToScreenMatrix(1,1)=P[4][8];
-     surfaceToScreenMatrix(1,2)=0;
-     surfaceToScreenMatrix(1,3)=P[5][8];
-     
-     surfaceToScreenMatrix(2,0)=0;
-     surfaceToScreenMatrix(2,1)=0;
-     surfaceToScreenMatrix(2,2)=0;
-     surfaceToScreenMatrix(2,3)=0;
-     
-     surfaceToScreenMatrix(3,0)=P[6][8];
-     surfaceToScreenMatrix(3,1)=P[7][8];
-     surfaceToScreenMatrix(3,2)=0;
-     surfaceToScreenMatrix(3,3)=1;
+    surfaceToScreenMatrix(0,0)=P[0][8];
+    surfaceToScreenMatrix(0,1)=P[1][8];
+    surfaceToScreenMatrix(0,2)=0;
+    surfaceToScreenMatrix(0,3)=P[2][8];
+    
+    surfaceToScreenMatrix(1,0)=P[3][8];
+    surfaceToScreenMatrix(1,1)=P[4][8];
+    surfaceToScreenMatrix(1,2)=0;
+    surfaceToScreenMatrix(1,3)=P[5][8];
+    
+    surfaceToScreenMatrix(2,0)=0;
+    surfaceToScreenMatrix(2,1)=0;
+    surfaceToScreenMatrix(2,2)=0;
+    surfaceToScreenMatrix(2,3)=0;
+    
+    surfaceToScreenMatrix(3,0)=P[6][8];
+    surfaceToScreenMatrix(3,1)=P[7][8];
+    surfaceToScreenMatrix(3,2)=0;
+    surfaceToScreenMatrix(3,3)=1;
 }
 
 void ofxSurface::doScreenToSurfaceMatrix(){
@@ -832,4 +618,234 @@ void ofxSurface::doGaussianElimination(float *input, int n){
             //A[i*n+j]=0;
         }
     }
+}
+
+// -------------------------------------------------------- Mouse Events
+void ofxSurface::_resetSurface( int &_nId ){
+    doFrame();
+    doSurfaceToScreenMatrix();
+    doMask();
+    saveSettings(configFile);
+    doBox();
+}
+
+void ofxSurface::_mouseMoved(ofMouseEventArgs &e){
+    ofVec2f mouse = ofVec2f(e.x, e.y);
+    
+    if (bAutoActive)
+        bActive = textureCorners.inside(mouse);
+}
+
+void ofxSurface::_mousePressed(ofMouseEventArgs &e){
+    ofVec3f mouse = ofVec3f(e.x, e.y, 0.0);
+
+    if (bEditMode){
+        if (!bEditMask){
+            // Editing the texture corners
+            //
+            for(int i = 0; i < 4; i++){
+                if ( ofDist(e.x, e.y, textureCorners[i].x, textureCorners[i].y) <= 10 )
+                    selectedTextureCorner = i;
+            }
+        } else {
+            // Editing the mask corners
+            //
+            bool overDot = false;
+            for(int i = 0; i < maskCorners.size(); i++){
+                ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
+                pos = surfaceToScreenMatrix * pos;
+                
+                if ( ofDist(e.x, e.y, pos.x, pos.y) <= 10 ){
+                    selectedMaskCorner = i;
+                    overDot = true;
+                }
+            }
+            
+            // Add new Dot if it´s over the line
+            //
+            if (!overDot && bActive ){
+                
+                doScreenToSurfaceMatrix();
+                mouse = screenToSurfaceMatrix * mouse;
+                mouse.x = mouse.x / width;
+                mouse.y = mouse.y / height;
+                
+                int addNew = -1;
+                
+                // Search for the right placer to incert the point in the array
+                //
+                for (int i = 0; i < maskCorners.size(); i++){
+                    int next = (i+1)%maskCorners.size();
+                    
+                    ofVec2f AtoM = mouse - maskCorners[i];
+                    ofVec2f AtoB = maskCorners[next] - maskCorners[i];
+                    
+                    float a = atan2f(AtoM.x, AtoM.y);
+                    float b = atan2f(AtoB.x, AtoB.y);
+                    
+                    if ( abs(a - b) < 0.05){
+                        addNew = next;
+                    }
+                }
+                
+                if (addNew >= 0 ){
+                    maskCorners.getVertices().insert( maskCorners.getVertices().begin()+addNew, mouse);
+                    selectedMaskCorner = addNew;
+                }
+                
+            }
+        }
+    }
+}
+
+void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
+    ofVec3f mouse = ofVec3f(e.x, e.y,0);
+    ofVec3f mouseLast = ofVec3f(ofGetPreviousMouseX(),ofGetPreviousMouseY(),0);
+    
+    if (bEditMode){
+        if (!bEditMask){
+            // Drag texture corners
+            //
+            if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
+                
+                if (e.button == 2){
+                    // Deformation
+                    //
+                    textureCorners[selectedTextureCorner].x = ofGetMouseX();
+                    textureCorners[selectedTextureCorner].y = ofGetMouseY();
+                    
+                    doSurfaceToScreenMatrix();
+                    saveSettings(configFile);
+                } else if ( ofGetKeyPressed() ){
+                    // Rotation
+                    //
+                    ofVec2f center = getPos();
+                    
+                    ofVec2f fromCenterTo = mouseLast - center;
+                    float prevAngle = -1.0*atan2f(fromCenterTo.x,fromCenterTo.y)+(PI/2);
+                    
+                    fromCenterTo = mouse - center;
+                    float actualAngle = -1.0*atan2f(fromCenterTo.x,fromCenterTo.y)+(PI/2);
+                    
+                    float dif = actualAngle-prevAngle;
+                    
+                    rotate(dif);
+                } else if ( e.button == 1 ){
+                    // Centered Scale
+                    //
+                    float prevDist = mouseLast.distance(getPos());
+                    float actualDist = mouse.distance(getPos());
+                    
+                    float dif = actualDist/prevDist;
+                    
+                    scale(dif);            
+                } else {
+                    // Corner Scale
+                    //
+                    ofVec2f center = getPos();
+                    
+                    int  opositCorner = (selectedTextureCorner - 2 < 0)? (4+selectedTextureCorner-2) : (selectedTextureCorner-2);
+                    ofVec2f toOpositCorner = center - textureCorners[opositCorner];  
+                    
+                    float prevDist = mouseLast.distance( textureCorners[opositCorner] );
+                    float actualDist = mouse.distance( textureCorners[opositCorner] );
+                    
+                    float dif = actualDist/prevDist;
+                    
+                    move( textureCorners[opositCorner] + toOpositCorner * dif );
+                    scale(dif); 
+                } 
+                doBox();
+                
+            // Drag all the surface
+            //
+            } else if ( bActive ){
+                for (int i = 0; i < 4; i++){
+                    textureCorners[i] += mouse-mouseLast;
+                }
+                
+                doSurfaceToScreenMatrix();
+                doBox();
+                saveSettings(configFile);
+                mouseLast = mouse;
+            }
+        } else {
+            
+            // Drag mask points
+            //
+            for(int i = 0; i < maskCorners.size(); i++){
+                ofVec3f pos = ofVec3f( maskCorners[i].x * width, maskCorners[i].y * height, 0.0);
+                pos = surfaceToScreenMatrix * pos;
+                
+                if ((selectedMaskCorner >= 0) && (selectedMaskCorner < maskCorners.size() )){
+                    ofVec3f newPos = ofVec3f(mouse.x, mouse.y, 0.0);
+                    doScreenToSurfaceMatrix();
+                    newPos = screenToSurfaceMatrix * mouse;
+                    newPos.x = ofClamp(newPos.x / width, 0.0, 1.0);
+                    newPos.y = ofClamp(newPos.y / height, 0.0, 1.0);
+                    
+                    maskCorners[selectedMaskCorner] = newPos;
+                }
+            }
+            doMask();
+            saveSettings(configFile);
+        }
+    }
+    mouseLast = ofVec2f(e.x, e.y);
+}
+
+void ofxSurface::_mouseReleased(ofMouseEventArgs &e){
+    if (bEditMode){
+        if (!bEditMask){
+            if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
+                doSurfaceToScreenMatrix();
+                saveSettings(configFile);
+                selectedTextureCorner = -1;
+            }
+        } else {
+            saveSettings(configFile);
+            selectedMaskCorner = -1;
+        }
+    }
+}
+
+//Key Events
+void ofxSurface::_keyPressed(ofKeyEventArgs &e){
+        
+    switch (e.key) {
+        case OF_KEY_F3:
+            bEditMode = !bEditMode;
+            break;
+    }
+    
+    if (bActive && bEditMode & bEditMask) {
+
+        // Delete the selected mask point
+        //
+        if ( (e.key == 'd') && 
+            (selectedMaskCorner >= 0) && 
+            (selectedMaskCorner < maskCorners.size() ) ){
+            maskCorners.getVertices().erase(maskCorners.getVertices().begin()+ selectedMaskCorner );
+            selectedMaskCorner = -1;
+            doMask();
+            saveSettings(configFile);
+        }
+        
+        // Reset all the mask or the texture
+        //
+        if ( (e.key == 'c') ){
+            maskCorners.clear();
+            selectedMaskCorner = -1;
+            ofPoint newPoint = ofPoint(0.0,0.0,0.0);
+            maskCorners.addVertex(newPoint);
+            newPoint.set(1.0,0.0,0.0);
+            maskCorners.addVertex(newPoint);
+            newPoint.set(1.0,1.0,0.0);
+            maskCorners.addVertex(newPoint);
+            newPoint.set(0.0,1.0,0.0);
+            maskCorners.addVertex(newPoint);
+            doMask();
+            saveSettings(configFile);
+        }
+    }   
 }
