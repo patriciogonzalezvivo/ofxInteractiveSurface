@@ -102,6 +102,7 @@ void ofxSurface::loadSettings( int _nTag, string _configFile){
             // Load the type and do what it have to 
             //
             nId = XML.getValue("id", 0);
+            bVisible = XML.getValue("visible", true);
                 
             // The 4 texture coordenates are absolute and from them it makes
             // two matrix transformation one from The screen to the workd and biceversa 
@@ -169,6 +170,8 @@ void ofxSurface::saveSettings(string _configFile){
                 // load the data
                 //
                 if ( XML.getValue("id", 0) == nId){
+                    XML.setValue("visible", bVisible);
+                    
                     if (XML.pushTag("texture")){
                         for(int i = 0; i < 4; i++){
                             XML.setValue("point:x",textureCorners[i].x, i);
