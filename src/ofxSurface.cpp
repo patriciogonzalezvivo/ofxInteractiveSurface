@@ -31,7 +31,6 @@ ofxSurface::ofxSurface(){
     //
     bEditMode = true;
     bEditMask = false;
-    bVisible = true;
     bActive = false;
     bAutoActive = true;
     
@@ -82,13 +81,15 @@ void main (void){\n\
     maskShader.linkProgram();                                               // ... and compile the shader
     
     configFile = "config.xml";
-    title = NULL;
+    //title = NULL;
     nId = -1;
-    doTitleBar();
+    //doTitleBar();
 }
 
 // ------------------------------------------------------------- SETUP
-void ofxSurface::loadSettings( int _nTag, string _configFile){
+bool ofxSurface::loadSettings( int _nTag, string _configFile){
+    bool loaded = false;
+    
     ofxXmlSettings XML;
     
     if (_configFile != "none")
@@ -102,7 +103,6 @@ void ofxSurface::loadSettings( int _nTag, string _configFile){
             // Load the type and do what it have to 
             //
             nId = XML.getValue("id", 0);
-            bVisible = XML.getValue("visible", true);
                 
             // The 4 texture coordenates are absolute and from them it makes
             // two matrix transformation one from The screen to the workd and biceversa 
@@ -145,12 +145,17 @@ void ofxSurface::loadSettings( int _nTag, string _configFile){
             // loaded or not it will decent one level to the root
             //
             XML.popTag();
+            loaded = true;
         }
     } else
-        cout << "ERROR: ofxSurface::loadSettings couldn't load surface " << nId << " on " << configFile << endl;
+        ofLog(OF_LOG_ERROR, "ofxSurface::loadSettings couldn't load surface " + ofToString(nId) + " on " + configFile);
+    
+    return loaded;
 }
 
-void ofxSurface::saveSettings(string _configFile){
+bool ofxSurface::saveSettings(string _configFile){
+    bool saved = false;
+    
     ofxXmlSettings XML;
     
     if (_configFile != "none")
@@ -170,7 +175,7 @@ void ofxSurface::saveSettings(string _configFile){
                 // load the data
                 //
                 if ( XML.getValue("id", 0) == nId){
-                    XML.setValue("visible", bVisible);
+                    saved = true;
                     
                     if (XML.pushTag("texture")){
                         for(int i = 0; i < 4; i++){
@@ -212,72 +217,68 @@ void ofxSurface::saveSettings(string _configFile){
             }
         }
     } else
-        cout << "ERROR: ofxSurface::saveSettings couldn't save " << nId << " surface on " << configFile << endl;
+        ofLog(OF_LOG_ERROR, "ofxSurface::saveSettings couldn't save " + ofToString(nId) + " surface on " + configFile);
     
-    
+    return saved;
 }
 
 // ------------------------------------------------------ LOOPS
 //
 void ofxSurface::draw( ofTexture &texture ){
-    if ( bEditMode || bVisible ){
-        // If the texture change or it´s new it will update some parameters
-        // like the size of the FBO, de mask and the matrix
-        //
-        if ((width != texture.getWidth()) ||
-            (height != texture.getHeight()) ){
-            width = texture.getWidth();
-            height = texture.getHeight();
-            
-            maskFbo.allocate(width,height);
-            doMask();
-            doSurfaceToScreenMatrix();
-        }
+    // If the texture change or it´s new it will update some parameters
+    // like the size of the FBO, de mask and the matrix
+    //
+    if ((width != texture.getWidth()) ||
+        (height != texture.getHeight()) ){
+        width = texture.getWidth();
+        height = texture.getHeight();
         
-        //  Here is where the magic happends
-        //  Make the matrix multiplication and mask the texture
-        ofPushMatrix();
-        float texOpacity = 0.0;
-        float maskOpacity = 0.0;
-        
-        if ( textureCorners.inside(ofGetMouseX(), ofGetMouseY()) && (bEditMode)){
-            texOpacity = 1.0;
-            maskOpacity = 0.2;
-        } else if (!bEditMode){
-            texOpacity = 1.0;
-            maskOpacity = 0.0;
-        } else {
-            texOpacity = 0.8;
-            maskOpacity = 0.0;
-        }
-        
-        // Matrix multiplication: rotates, translate and resize to get the right perspective
-        //
-        glMultMatrixf(glMatrix);
-        
-        // Active the alpha-masking shader
-        //
-        maskShader.begin();
-        maskShader.setUniformTexture("maskTex", maskFbo.getTextureReference(), 1 );
-        maskShader.setUniform1f("texOpacity", texOpacity);
-        maskShader.setUniform1f("maskOpacity", maskOpacity);
-        
-        // Draw the texture (image, video, Fbo, etc)
-        //
-        texture.draw(0,0);
-        
-        // Close and re-set everything like nothing happend
-        //
-        maskShader.end();
-        ofPopMatrix();
+        maskFbo.allocate(width,height);
+        doMask();
+        doSurfaceToScreenMatrix();
     }
+    
+    //  Here is where the magic happends
+    //  Make the matrix multiplication and mask the texture
+    ofPushMatrix();
+    float texOpacity = 0.0;
+    float maskOpacity = 0.0;
+    
+    if ( textureCorners.inside(ofGetMouseX(), ofGetMouseY()) && (bEditMode)){
+        texOpacity = 1.0;
+        maskOpacity = 0.2;
+    } else if (!bEditMode){
+        texOpacity = 1.0;
+        maskOpacity = 0.0;
+    } else {
+        texOpacity = 0.8;
+        maskOpacity = 0.0;
+    }
+    
+    // Matrix multiplication: rotates, translate and resize to get the right perspective
+    //
+    glMultMatrixf(glMatrix);
+    
+    // Active the alpha-masking shader
+    //
+    maskShader.begin();
+    maskShader.setUniformTexture("maskTex", maskFbo.getTextureReference(), 1 );
+    maskShader.setUniform1f("texOpacity", texOpacity);
+    maskShader.setUniform1f("maskOpacity", maskOpacity);
+    
+    // Draw the texture (image, video, Fbo, etc)
+    //
+    texture.draw(0,0);
+    
+    // Close and re-set everything like nothing happend
+    //
+    maskShader.end();
+    ofPopMatrix();
 
     // This just draw the circles and lines
     //
     if (bEditMode){
         ofPushStyle();
-        if (title != NULL)
-            title->draw();
         
         if ( !bEditMask ){
             ofFill();
@@ -371,6 +372,7 @@ void ofxSurface::rotate(float _rotAngle){
     doSurfaceToScreenMatrix();
 }
 
+/*
 void ofxSurface::doTitleBar(){
     if ( title != NULL)
         delete title;
@@ -379,7 +381,7 @@ void ofxSurface::doTitleBar(){
     title->addButton('m', &bEditMask, TOGGLE_BUTTON);
     title->addButton('v', &bVisible, TOGGLE_BUTTON);
     ofAddListener( title->reset , this, &ofxSurface::_resetSurface);
-}
+}*/
 
 void ofxSurface::doBox(){
     box = textureCorners.getBoundingBox();
@@ -624,13 +626,6 @@ void ofxSurface::doGaussianElimination(float *input, int n){
 }
 
 // -------------------------------------------------------- Mouse Events
-void ofxSurface::_resetSurface( int &_nId ){
-    doFrame();
-    doSurfaceToScreenMatrix();
-    doMask();
-    saveSettings(configFile);
-    doBox();
-}
 
 void ofxSurface::_mouseMoved(ofMouseEventArgs &e){
     ofVec2f mouse = ofVec2f(e.x, e.y);

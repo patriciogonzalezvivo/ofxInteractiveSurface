@@ -10,7 +10,6 @@
 #define OFXSURFACE
 
 #include "ofMain.h"
-#include "ofxTitleBar.h"
 #include "ofxXmlSettings.h"
 
 class ofxSurface {
@@ -21,8 +20,8 @@ public:
     // The nId number it´s the name of the instance on the .xml file. This
     // allows saving multiples surface parameters in one single config file
     //
-    void    loadSettings(int _nTag, string _configFile = "none");
-    void    saveSettings(string _configFile = "none");
+    bool    loadSettings(int _nTag, string _configFile = "none");
+    bool    saveSettings(string _configFile = "none");
     
     bool    isOver(ofPoint _loc) { return textureCorners.inside(_loc); };
     int     getId() const { return nId; };
@@ -36,14 +35,11 @@ public:
     //
     void    draw( ofTexture &texture );
     
-    ofxTitleBar *title;
-
-    bool    bActive, bEditMode, bEditMask, bAutoActive, bVisible;
+    bool    bAutoActive, bActive, bEditMode, bEditMask;
     
 protected:
     virtual void doFrame();
     virtual void doBox();
-    void    doTitleBar();
     
     void    doMask();                       // Update the mask
     void    doSurfaceToScreenMatrix();      // Update the SurfaceToScreen transformation matrix
@@ -57,9 +53,6 @@ protected:
     void    _mouseDragged(ofMouseEventArgs &e);
     void    _mouseReleased(ofMouseEventArgs &e);
     void    _keyPressed(ofKeyEventArgs &e);
-    
-    void    _resetSurface( int &_nId );
-    
     
     // Mask variables
     //
