@@ -17,42 +17,44 @@ public:
   
     ofxSurface();
     
-    // The nId number it´s the name of the instance on the .xml file. This
-    // allows saving multiples surface parameters in one single config file
-    //
-    bool    loadSettings(int _nTag, string _configFile = "none");
-    bool    saveSettings(string _configFile = "none");
+    bool        loadSettings(int _nTag, string _configFile = "none");
+    bool        saveSettings(string _configFile = "none");
     
-    bool    isOver(ofPoint _loc) { return textureCorners.inside(_loc); };
-    int     getId() const { return nId; };
-    ofPoint getPos() const { return ofPoint(x,y); };
+    void        setMask(ofPolyline &_polyLine);
+    void        setCoorners(ofPoint _coorners[4]);
     
-    void    move(ofPoint _pos);
-    void    scale(float _scale);
-    void    rotate(float _angle);
+    int         getId() const { return nId; };
+    ofPoint     getPos() const { return ofPoint(x,y); };
+    ofPoint     getSurfaceToScreen(ofPoint _pos){ return surfaceToScreenMatrix * _pos; };
+    ofPoint     getScreenToSurface(ofPoint _pos){ return screenToSurfaceMatrix * _pos; };
+    GLfloat*    getGlMatrix() { return glMatrix; };
     
-    // Load and Draw ( super simple )
-    //
-    void    draw( ofTexture &texture );
+    void        move(ofPoint _pos);
+    void        scale(float _scale);
+    void        rotate(float _angle);
     
-    bool    bAutoActive, bActive, bEditMode, bEditMask;
+    void        update();
+    void        draw( ofTexture &texture );
+    
+    bool        isOver(ofPoint _loc) { return textureCorners.inside(_loc); };
+    
+    bool        bActive, bEditMode, bEditMask;
+    
+    void        resetMask();
+    void        resetFrame();
     
 protected:
-    virtual void doFrame();
-    virtual void doBox();
-    
-    void    doMask();                       // Update the mask
-    void    doSurfaceToScreenMatrix();      // Update the SurfaceToScreen transformation matrix
-    void    doScreenToSurfaceMatrix();      // Update the ScreenToSurface transformation matrix
-    void    doGaussianElimination(float *input, int n); // This is used making the matrix
+    void        doSurfaceToScreenMatrix();      // Update the SurfaceToScreen transformation matrix
+    void        doScreenToSurfaceMatrix();      // Update the ScreenToSurface transformation matrix
+    void        doGaussianElimination(float *input, int n); // This is used making the matrix
     
     // Mouse & Key Events from the testApp
     //
-	void    _mouseMoved(ofMouseEventArgs &e);
-    void    _mousePressed(ofMouseEventArgs &e);
-    void    _mouseDragged(ofMouseEventArgs &e);
-    void    _mouseReleased(ofMouseEventArgs &e);
-    void    _keyPressed(ofKeyEventArgs &e);
+	void        _mouseMoved(ofMouseEventArgs &e);
+    void        _mousePressed(ofMouseEventArgs &e);
+    void        _mouseDragged(ofMouseEventArgs &e);
+    void        _mouseReleased(ofMouseEventArgs &e);
+    void        _keyPressed(ofKeyEventArgs &e);
     
     // Mask variables
     //
@@ -79,5 +81,8 @@ protected:
     float       x, y;
     int         width, height;
     int         nId;
+    
+    bool        bUpdateMask;
+    bool        bUpdateCoord;
 };
 #endif

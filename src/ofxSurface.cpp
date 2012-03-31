@@ -2,14 +2,13 @@
 //  ofxSurface.cpp
 //  emptyExample
 //
-//  Created by Patricio GonzÃ¡lez Vivo on 3/5/12.
+//  Created by Patricio Gonzalez Vivo on 3/5/12.
 //  Copyright (c) 2012 http://www.PatricioGonzalezVivo.com All rights reserved.
 //
 
 #include "ofxSurface.h"
 
 ofxSurface::ofxSurface(){
-    
     // Link the core events in order to catch mouse and keys
     //
     ofAddListener(ofEvents().mouseMoved, this, &ofxSurface::_mouseMoved);
@@ -29,61 +28,56 @@ ofxSurface::ofxSurface(){
     // In editMode press "m" to access to the mask points, or "M" to stay in that mode 
     // until "m" itÂ´s pressed again.
     //
-    bEditMode = true;
-    bEditMask = false;
-    bActive = false;
-    bAutoActive = true;
+    bActive     = false;
+    bEditMode   = true;
+    bEditMask   = false;
+    bUpdateMask = true;
+    bUpdateCoord= true;
     
     // In order to simplify some things IÂ´m using ofPolyline, specialy for making easy
     // to check if the mouse itÂ´s over the surface.
     // So each textureCorner have an absolute value. It could be improve using normalized
     // and centerBased coordenates in order to make propper scalations and rotations.
     //
-    textureCorners.addVertex(0.0,0.0);
-    textureCorners.addVertex(1.0,0.0);
-    textureCorners.addVertex(1.0,1.0);
-    textureCorners.addVertex(0.0,1.0);
+    width       = 640;
+    height      = 480;
     
-    // MaskPointer are normalized because they depend on the textureCorners. To deal with
-    // them itÂ´s necesary to make some transformations using the ScreenToSurface matrix
-    //
-    ofPoint newPoint = ofPoint(0.0,0.0,0.0);
-    maskCorners.addVertex(newPoint);
-    newPoint.set(1.0,0.0,0.0);
-    maskCorners.addVertex(newPoint);
-    newPoint.set(1.0,1.0,0.0);
-    maskCorners.addVertex(newPoint);
-    newPoint.set(0.0,1.0,0.0);
-    maskCorners.addVertex(newPoint);
+    maskCorners.addVertex(0.0,0.0);
+    maskCorners.addVertex(1.0,0.0);
+    maskCorners.addVertex(1.0,1.0);
+    maskCorners.addVertex(0.0,1.0);
+    
+    textureCorners.addVertex(0.0,0.0);
+    textureCorners.addVertex(width,0.0);
+    textureCorners.addVertex(width,height);
+    textureCorners.addVertex(0.0,height);
     
     // This shader itÂ´s basicaly a alphaMask shader for quick and clean masking
     // also I added some opacity variables in order to chech and see the masked-texture
     // wile you are editing it.
     //
     string shaderProgram = "#version 120\n\
-#extension GL_ARB_texture_rectangle : enable\n\
-\n\
-uniform sampler2DRect tex0;\n\
-uniform sampler2DRect maskTex;\n\
-uniform float texOpacity;\n\
-uniform float maskOpacity;\n\
-\n\
-void main (void){\n\
+    #extension GL_ARB_texture_rectangle : enable\n\
+    \n\
+    uniform sampler2DRect tex0;\n\
+    uniform sampler2DRect maskTex;\n\
+    uniform float texOpacity;\n\
+    uniform float maskOpacity;\n\
+    \n\
+    void main (void){\n\
     vec2 pos = gl_TexCoord[0].st;\n\
     \n\
     vec4 src = texture2DRect(tex0, pos);\n\
     float mask = texture2DRect(maskTex, pos).r;\n\
     \n\
     gl_FragColor = vec4( src.rgb * texOpacity , clamp( min(src.a,mask) , maskOpacity, 1.0));\n\
-}\n\
-\n";
-    maskShader.setupShaderFromSource(GL_FRAGMENT_SHADER, shaderProgram);    // Load ...
-    maskShader.linkProgram();                                               // ... and compile the shader
-    
-    configFile = "config.xml";
-    //title = NULL;
-    nId = -1;
-    //doTitleBar();
+    }\n";
+    maskShader.setupShaderFromSource(GL_FRAGMENT_SHADER, shaderProgram);
+    maskShader.linkProgram();
+    maskFbo.allocate(width, height);                                              // ... and compile the shader
+
+    configFile  = "config.xml";
+    nId         = -1;
 }
 
 // ------------------------------------------------------------- SETUP
@@ -95,60 +89,58 @@ bool ofxSurface::loadSettings( int _nTag, string _configFile){
     if (_configFile != "none")
         configFile = _configFile;
     
-    // Open the xml file
-    //
     if (XML.loadFile(configFile)){
+        maskCorners.clear();
+        
+        if (XML.getValue("general:fullscreen", false ) == true){
+            width = ofGetScreenWidth();
+            height = ofGetScreenHeight();
+        } else {
+            width = XML.getValue("general:width", 640 );
+            height = XML.getValue("general:height", 480 );
+        }
+        
         if (XML.pushTag("surface", _nTag)){
             
             // Load the type and do what it have to 
             //
             nId = XML.getValue("id", 0);
-                
-            // The 4 texture coordenates are absolute and from them it makes
-            // two matrix transformation one from The screen to the workd and biceversa 
+            
+            // Load the texture coorners
             //
             if (XML.pushTag("texture")){
                 for(int i = 0; i < 4; i++){
-                    XML.pushTag("point",i);
-                    textureCorners[i].set(XML.getValue("x", 0.0),XML.getValue("y", 0.0));
-                    XML.popTag();
+                    if (XML.pushTag("point",i)){
+                        textureCorners[i].set(XML.getValue("x", 0.0),XML.getValue("y", 0.0));
+                        XML.popTag();
+                    }
                 }
-                doScreenToSurfaceMatrix();
-                doSurfaceToScreenMatrix();
-                doBox();
                 XML.popTag();
             }
             
-            // Then it«s the mask path, made from normalized points that then will fix to
-            // the texture proportions
-            //
-            if(XML.pushTag("mask")){
-                
+            // Load the mask path
+            if ( XML.pushTag("mask") ){
                 int totalMaskCorners = XML.getNumTags("point");
-                
-                // Clean the maskCorners before loading new-onces
-                //
                 if (totalMaskCorners > 0){
                     maskCorners.clear();
                 }
                 
                 for(int i = 0; i < totalMaskCorners; i++){
                     XML.pushTag("point",i);
-                    maskCorners.addVertex(XML.getValue("x", 0.0),XML.getValue("y", 0.0));
-                    XML.popTag();
+                    maskCorners.addVertex( XML.getValue("x", 0.0),XML.getValue("y", 0.0));
+                    XML.popTag(); // Pop "point"
                 }
-                XML.popTag();
-                maskFbo.allocate(width, height);
-                doMask();
+                XML.popTag(); // Pop "mask"
             }
             
-            // loaded or not it will decent one level to the root
-            //
-            XML.popTag();
+            bUpdateMask = true;
+            bUpdateCoord = true;
             loaded = true;
-        }
+            
+            XML.popTag(); // Pop Surface
+        }    
     } else
-        ofLog(OF_LOG_ERROR, "ofxSurface::loadSettings couldn't load surface " + ofToString(nId) + " on " + configFile);
+        ofLog(OF_LOG_ERROR,"ofxSurface: loading patch n¼ " + ofToString(nId) + " on " + configFile );
     
     return loaded;
 }
@@ -161,7 +153,19 @@ bool ofxSurface::saveSettings(string _configFile){
     if (_configFile != "none")
         configFile = _configFile;
     
+    // Open the configfile
+    //
     if (XML.loadFile(configFile)){
+        
+        // If it«s the first time it«s saving the information
+        // the nId it«s going to be -1 and it«s not going to be 
+        // a place that holds the information. It«s that the case:
+        //
+        //  1- Search for the first free ID abailable number
+        //
+        //  2- Make the structure of the path that hold the information
+        //
+        
         // Get the total number of surfaces...
         //
         int totalSurfaces = XML.getNumTags("surface");
@@ -171,20 +175,22 @@ bool ofxSurface::saveSettings(string _configFile){
         for (int i = 0; i < totalSurfaces; i++){
             if (XML.pushTag("surface", i)){
                 
-                // Once it found the right surface that match the id
-                // load the data
+                // Once it found the right surface that match the id ...
                 //
-                if ( XML.getValue("id", 0) == nId){
-                    saved = true;
+                if ( XML.getValue("id", -1) == nId){
                     
+                    // Position of the texture coorners
+                    //
                     if (XML.pushTag("texture")){
                         for(int i = 0; i < 4; i++){
                             XML.setValue("point:x",textureCorners[i].x, i);
                             XML.setValue("point:y",textureCorners[i].y, i);
                         }
-                        XML.popTag();
+                        XML.popTag(); // pop "texture"
                     }
                     
+                    // Mask path
+                    //
                     if (XML.pushTag("mask")){
                         int totalSavedPoints = XML.getNumTags("point");
                         
@@ -206,14 +212,14 @@ bool ofxSurface::saveSettings(string _configFile){
                                 XML.removeTag("point",j-1);
                             }
                         }
-                        
-                        doMask();
-                        XML.popTag();
+                        XML.popTag(); // pop "mask"
                     }
+                    
+                    // Once it finish save
+                    //
+                    saved = XML.saveFile();
                 }
-                
-                XML.popTag();
-                XML.saveFile();
+                XML.popTag(); // pop "surface"
             }
         }
     } else
@@ -221,6 +227,21 @@ bool ofxSurface::saveSettings(string _configFile){
     
     return saved;
 }
+
+void ofxSurface::setCoorners(ofPoint _coorners[4]){
+    for (int i = 0; i < 4; i++){
+        textureCorners[i].set(_coorners[i]);
+    }
+    bUpdateCoord = true;
+    bUpdateMask = true;
+}
+
+void ofxSurface::setMask(ofPolyline &_polyLine){ 
+    
+    maskCorners = _polyLine;
+    
+    bUpdateMask = true; 
+};
 
 // ------------------------------------------------------ LOOPS
 //
@@ -233,20 +254,40 @@ void ofxSurface::draw( ofTexture &texture ){
         width = texture.getWidth();
         height = texture.getHeight();
         
-        maskFbo.allocate(width,height);
-        doMask();
-        doSurfaceToScreenMatrix();
+        bUpdateMask = true;
     }
     
-    //  Here is where the magic happends
-    //  Make the matrix multiplication and mask the texture
-    ofPushMatrix();
+    if (bUpdateMask){
+        maskFbo.allocate(width,height);
+        
+        // Generate masking contour
+        //
+        maskFbo.begin();
+        ofClear(0,255);
+        ofBeginShape();
+        ofSetColor(255, 255, 255);
+        for(int i = 0; i < maskCorners.size(); i++ ){
+            ofVertex(maskCorners[i].x*width,maskCorners[i].y*height);
+        }
+        ofEndShape(true);
+        maskFbo.end();
+        
+        bUpdateMask = false;
+        bUpdateCoord = true;
+    }
+
+    if (bUpdateCoord){
+        doSurfaceToScreenMatrix();
+        box = textureCorners.getBoundingBox();
+        bUpdateCoord = false;
+    }
+    
     float texOpacity = 0.0;
     float maskOpacity = 0.0;
-    
+        
     if ( textureCorners.inside(ofGetMouseX(), ofGetMouseY()) && (bEditMode)){
         texOpacity = 1.0;
-        maskOpacity = 0.2;
+        maskOpacity = 0.5;
     } else if (!bEditMode){
         texOpacity = 1.0;
         maskOpacity = 0.0;
@@ -254,27 +295,19 @@ void ofxSurface::draw( ofTexture &texture ){
         texOpacity = 0.8;
         maskOpacity = 0.0;
     }
-    
+        
+    ofPushMatrix();
     // Matrix multiplication: rotates, translate and resize to get the right perspective
     //
     glMultMatrixf(glMatrix);
-    
-    // Active the alpha-masking shader
-    //
     maskShader.begin();
     maskShader.setUniformTexture("maskTex", maskFbo.getTextureReference(), 1 );
     maskShader.setUniform1f("texOpacity", texOpacity);
     maskShader.setUniform1f("maskOpacity", maskOpacity);
-    
-    // Draw the texture (image, video, Fbo, etc)
-    //
     texture.draw(0,0);
-    
-    // Close and re-set everything like nothing happend
-    //
     maskShader.end();
     ofPopMatrix();
-
+    
     // This just draw the circles and lines
     //
     if (bEditMode){
@@ -372,40 +405,26 @@ void ofxSurface::rotate(float _rotAngle){
     doSurfaceToScreenMatrix();
 }
 
-/*
-void ofxSurface::doTitleBar(){
-    if ( title != NULL)
-        delete title;
+void ofxSurface::resetMask(){
+    maskCorners.clear();
     
-    title = new ofxTitleBar(&box, &nId);
-    title->addButton('m', &bEditMask, TOGGLE_BUTTON);
-    title->addButton('v', &bVisible, TOGGLE_BUTTON);
-    ofAddListener( title->reset , this, &ofxSurface::_resetSurface);
-}*/
-
-void ofxSurface::doBox(){
-    box = textureCorners.getBoundingBox();
+    ofPoint newPoint = ofPoint(0.0,0.0,0.0);
+    maskCorners.addVertex(newPoint);
+    newPoint.set(1.0,0.0,0.0);
+    maskCorners.addVertex(newPoint);
+    newPoint.set(1.0,1.0,0.0);
+    maskCorners.addVertex(newPoint);
+    newPoint.set(0.0,1.0,0.0);
+    maskCorners.addVertex(newPoint);
 }
 
-void ofxSurface::doFrame(){
+void ofxSurface::resetFrame(){
     textureCorners[0].set(0, 0);
     textureCorners[1].set(width, 0);
     textureCorners[2].set(width, height);
     textureCorners[3].set(0, height);
 }
 
-void ofxSurface::doMask(){
-    // Generate masking contour
-    maskFbo.begin();
-    ofClear(0,255);
-    ofBeginShape();
-    ofSetColor(255, 255, 255);
-    for(int i = 0; i < maskCorners.size(); i++ ){
-        ofVertex(maskCorners[i].x*width,maskCorners[i].y*height);
-    }
-    ofEndShape(true);
-    maskFbo.end();
-}
 
 void ofxSurface::doSurfaceToScreenMatrix(){
     ofPoint src[4];
@@ -630,8 +649,7 @@ void ofxSurface::doGaussianElimination(float *input, int n){
 void ofxSurface::_mouseMoved(ofMouseEventArgs &e){
     ofVec2f mouse = ofVec2f(e.x, e.y);
     
-    if (bAutoActive)
-        bActive = textureCorners.inside(mouse);
+    bActive = textureCorners.inside(mouse);
 }
 
 void ofxSurface::_mousePressed(ofMouseEventArgs &e){
@@ -753,7 +771,7 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
                     move( textureCorners[opositCorner] + toOpositCorner * dif );
                     scale(dif); 
                 } 
-                doBox();
+                bUpdateCoord = true;
                 
             // Drag all the surface
             //
@@ -762,8 +780,7 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
                     textureCorners[i] += mouse-mouseLast;
                 }
                 
-                doSurfaceToScreenMatrix();
-                doBox();
+                bUpdateCoord = true;
                 saveSettings(configFile);
                 mouseLast = mouse;
             }
@@ -785,7 +802,7 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
                     maskCorners[selectedMaskCorner] = newPos;
                 }
             }
-            doMask();
+            bUpdateMask = true;
             saveSettings(configFile);
         }
     }
@@ -811,8 +828,14 @@ void ofxSurface::_mouseReleased(ofMouseEventArgs &e){
 void ofxSurface::_keyPressed(ofKeyEventArgs &e){
         
     switch (e.key) {
+        case OF_KEY_F2:
+            bEditMask = !bEditMask;
+            break;
         case OF_KEY_F3:
             bEditMode = !bEditMode;
+            break;
+        case OF_KEY_F4:
+            resetFrame();
             break;
     }
     
@@ -825,24 +848,16 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
             (selectedMaskCorner < maskCorners.size() ) ){
             maskCorners.getVertices().erase(maskCorners.getVertices().begin()+ selectedMaskCorner );
             selectedMaskCorner = -1;
-            doMask();
+            bUpdateMask = true;
             saveSettings(configFile);
         }
         
         // Reset all the mask or the texture
         //
         if ( (e.key == 'c') ){
-            maskCorners.clear();
             selectedMaskCorner = -1;
-            ofPoint newPoint = ofPoint(0.0,0.0,0.0);
-            maskCorners.addVertex(newPoint);
-            newPoint.set(1.0,0.0,0.0);
-            maskCorners.addVertex(newPoint);
-            newPoint.set(1.0,1.0,0.0);
-            maskCorners.addVertex(newPoint);
-            newPoint.set(0.0,1.0,0.0);
-            maskCorners.addVertex(newPoint);
-            doMask();
+            resetMask();
+            bUpdateMask = true;
             saveSettings(configFile);
         }
     }   
