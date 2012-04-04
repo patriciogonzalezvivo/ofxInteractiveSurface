@@ -41,10 +41,6 @@ void ofxKinectAutoCalibrator::init(ofxKinect *_kinect, int _aproxSurfaceArea){
     ofClear(0,255);
     debugFbo.end();
 
-    // Set fullscreen
-    //
-    ofSetFullscreen(true);
-    
     nStep = 0;
     bDone = false;
 }
@@ -332,7 +328,7 @@ bool ofxKinectAutoCalibrator::doStep3(){
     
     fbo.begin();
     ofClear(0,255);
-    ofPushStyle();
+    
     ofFill();
     //  Draw the red dots.
     //
@@ -346,6 +342,8 @@ bool ofxKinectAutoCalibrator::doStep3(){
     
     debugFbo.begin();
     ofClear(0,255);
+    ofPushStyle();
+    ofSetColor(255, 255);
     grayImage.draw(0, 0);
     contourFinder.draw();
     
@@ -354,8 +352,9 @@ bool ofxKinectAutoCalibrator::doStep3(){
     int circularBlobs = 0;
     for (int i = 0; i < contourFinder.nBlobs; i++){
         if ( isBlobCircular(contourFinder.blobs[i]) ){
-            ofSetColor(255, 255);
-            ofDrawBitmapString("Dot", contourFinder.blobs[i].centroid );
+            ofPushStyle();
+            ofSetColor(255,0,0, 255);
+            ofDrawBitmapString("Dot", contourFinder.blobs[i].boundingRect.x, contourFinder.blobs[i].boundingRect.y );
             float area = contourFinder.blobs[i].area;
             
             if ( area < minDotArea )
@@ -363,10 +362,15 @@ bool ofxKinectAutoCalibrator::doStep3(){
             
             if ( area > maxDotArea)
                 maxDotArea = area + 1;
-            
+            ofPopStyle();
             circularBlobs++;
         }
     }
+    
+    ofSetColor(255, 255);
+    ofDrawBitmapString(msg1, 15, 15);
+    ofDrawBitmapString(msg2, 15, 30);
+    debugFbo.end();
     
     if ( circularBlobs == 4){
         if (countDown == 0){
@@ -393,13 +397,11 @@ bool ofxKinectAutoCalibrator::doStep3(){
         redThreshold = ofClamp(redThreshold+1, 0, 255);
     }
     
-    ofDrawBitmapString(msg1, 15, 15);
-    ofDrawBitmapString(msg2, 15, 30);
-    debugFbo.end();
-    
     return rta;
 }
 
+//  Track each single dot and store that position for the making of the homography matrix
+//
 bool ofxKinectAutoCalibrator::doStep4(){
     bool rta = false;
     
@@ -434,17 +436,19 @@ bool ofxKinectAutoCalibrator::doStep4(){
     //  Search for the only circular dot ( it have to be just one )
     //
     if (contourFinder.nBlobs > 0){
-        
+        ofPushStyle();
         //  Search for circular dots
         //
         int circularBlobs = 0;
         int circularBlobID = -1;
         for (int i = 0; i < contourFinder.nBlobs; i++){
             if ( isBlobCircular(contourFinder.blobs[i]) ){
-                ofSetColor(255, 255);
-                ofDrawBitmapString("Dot", contourFinder.blobs[i].centroid );
+                ofPushStyle();
+                ofSetColor(255,0,0, 255);
+                ofDrawBitmapString("Dot", contourFinder.blobs[i].boundingRect.x, contourFinder.blobs[i].boundingRect.y );
                 circularBlobs++;
                 circularBlobID = i; // store it position on the blob vector
+                ofPopStyle();
             }
         }
         
@@ -474,6 +478,7 @@ bool ofxKinectAutoCalibrator::doStep4(){
             }
         } 
     }
+    ofPopStyle();
     debugFbo.end();
     
     return rta;

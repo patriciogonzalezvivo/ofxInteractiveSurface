@@ -29,18 +29,17 @@ public:
     float       getSurfaceDistance() const { return surfaceDistance; };
     float       getCleanDistance() const { return surfaceMinDistance; };
     
-    ofPolyline  getSurface() { return surfaceContour; };
+    ofPolyline& getSurface() { return surfaceContour; };
     ofTexture&  getTextureReference() { return fbo.getTextureReference(); };
+    ofTexture&  getDebugTextureReference() { return debugFbo.getTextureReference(); }; 
     ofPoint     getkinectToScreen(ofPoint _pos){ return kinectToScreenMatrix * _pos; };
-    
-    ofFbo       debugFbo;
-    
+
 private:
-    bool        doStep0();
-    bool        doStep1();
-    bool        doStep2();
-    bool        doStep3();
-    bool        doStep4();
+    bool        doStep0();  // Search for an empty space
+    bool        doStep1();  // Search for the distance to the surface (it looks for a big solid blob)
+    bool        doStep2();  // Calculate a visible position for the dots inside the surface
+    bool        doStep3();  // Search for the right threshold here it can see the dots
+    bool        doStep4();  // Track each dot position in order to make the matrix
     
     bool        isClean(ofxCvGrayscaleImage &img, float _normTolerance = 0);
     bool        isBlobSolid(ofxCvGrayscaleImage &img, ofxCvBlob &blob, float _normTolerance);
@@ -57,6 +56,7 @@ private:
     ofxCvContourFinder  contourFinder;
     
     ofFbo       fbo;
+    ofFbo       debugFbo;
     
     ofPoint     realDots[4];
     ofPoint     screenDots[4];

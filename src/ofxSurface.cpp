@@ -29,7 +29,7 @@ ofxSurface::ofxSurface(){
     // until "m" it´s pressed again.
     //
     bActive     = false;
-    bEditMode   = true;
+    bEditMode   = false;
     bEditMask   = false;
     bUpdateMask = true;
     bUpdateCoord= true;
@@ -91,14 +91,6 @@ bool ofxSurface::loadSettings( int _nTag, string _configFile){
     
     if (XML.loadFile(configFile)){
         maskCorners.clear();
-        
-        if (XML.getValue("general:fullscreen", false ) == true){
-            width = ofGetScreenWidth();
-            height = ofGetScreenHeight();
-        } else {
-            width = XML.getValue("general:width", 640 );
-            height = XML.getValue("general:height", 480 );
-        }
         
         if (XML.pushTag("surface", _nTag)){
             
@@ -232,6 +224,7 @@ void ofxSurface::setCoorners(ofPoint _coorners[4]){
     for (int i = 0; i < 4; i++){
         textureCorners[i].set(_coorners[i]);
     }
+    
     bUpdateCoord = true;
     bUpdateMask = true;
 }
@@ -278,6 +271,7 @@ void ofxSurface::draw( ofTexture &texture ){
 
     if (bUpdateCoord){
         doSurfaceToScreenMatrix();
+        doScreenToSurfaceMatrix();
         box = textureCorners.getBoundingBox();
         bUpdateCoord = false;
     }
@@ -423,6 +417,9 @@ void ofxSurface::resetFrame(){
     textureCorners[1].set(width, 0);
     textureCorners[2].set(width, height);
     textureCorners[3].set(0, height);
+    
+    bUpdateCoord = true;
+    bUpdateMask = true;
 }
 
 
@@ -843,7 +840,7 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
 
         // Delete the selected mask point
         //
-        if ( (e.key == 'd') && 
+        if ( (e.key == 'x') && 
             (selectedMaskCorner >= 0) && 
             (selectedMaskCorner < maskCorners.size() ) ){
             maskCorners.getVertices().erase(maskCorners.getVertices().begin()+ selectedMaskCorner );
@@ -854,7 +851,7 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
         
         // Reset all the mask or the texture
         //
-        if ( (e.key == 'c') ){
+        if ( (e.key == 'r') ){
             selectedMaskCorner = -1;
             resetMask();
             bUpdateMask = true;

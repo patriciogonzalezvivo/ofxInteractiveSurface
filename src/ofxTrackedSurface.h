@@ -21,22 +21,39 @@ class ofxTrackedSurface {
 public:
     ofxTrackedSurface();
     
-    void            init();
+    void            load();         // Load previus calibration setup
+    void            calibrate();    // Make a new calibration
     
     int             getWidth() const {return  width; };
     int             getHeight() const {return height; };
-    ofPolyline      getSurface(){ return autoSurface.getSurface(); };
+    ofxSurface&     getSurface() { return surface; };
+    ofPolyline      getSurfaceContour(){ return surfaceContour; };
     
-    void            update();
+    bool            isCalibrated() const {bool bCalibrated;};
+    
+    void            update(bool _updateSurface = true, bool _updateHands = true );
     void            draw(ofTexture &texture);
     void            exit();
     
-    ofEvent<int>    calibrationDone;
+    // Events
+    ofEvent<ofPolyline> calibrationDone;
+    ofEvent<ofxBlob>    objectAdded;
+    ofEvent<ofxBlob>    objectMoved;
+    ofEvent<ofxBlob>    objectDeleted;
+    ofEvent<ofxBlob>    handAdded;
+    ofEvent<ofxBlob>    handMoved;
+    ofEvent<ofxBlob>    handDeleted;
     
-    bool            bHideSettings, bCalibrated;
+    bool                bDebug;
     
 private:
-    void            cleanBackground(bool & pressed);
+    void                    _cleanBackground(float &_threshold);
+    void                    _objectAdded(ofxBlob &_blob);
+    void                    _objectMoved(ofxBlob &_blob);
+    void                    _objectDeleted(ofxBlob &_blob);
+    void                    _handAdded(ofxBlob &_blob);
+    void                    _handMoved(ofxBlob &_blob);
+    void                    _handDeleted(ofxBlob &_blob);
     
     ofxKinect               kinect;
     ofxSurface              surface;
@@ -44,18 +61,19 @@ private:
     
     ofxPanel                gui;
     ofxFloatSlider          minDist;
-    float                   maxDist;
+    ofxFloatSlider          maxDist;
     ofxIntSlider            objectsImageThreshold;
-    ofxButton               saveBackground;
     
     ofxCvFloatImage         surfaceImage;
     ofxCvGrayscaleImage     objectsImage;
     ofxCvGrayscaleImage     handsImage;
     
+    ofPolyline              surfaceContour;
     ofxBlobTracker          hands;
     ofxBlobTracker          objects;
     
-    int                     width, height, numPixels;
+    int                     width, height, numPixels, countDown;
+    bool                    bCalibrated;
 };
 
 #endif

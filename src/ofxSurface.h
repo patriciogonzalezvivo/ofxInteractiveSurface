@@ -23,8 +23,12 @@ public:
     void        setMask(ofPolyline &_polyLine);
     void        setCoorners(ofPoint _coorners[4]);
     
+    
     int         getId() const { return nId; };
     ofPoint     getPos() const { return ofPoint(x,y); };
+    int         getWidth() const {return  width; };
+    int         getHeight() const {return height; };
+    ofPolyline& getMask() { return maskCorners; };
     ofPoint     getSurfaceToScreen(ofPoint _pos){ return surfaceToScreenMatrix * _pos; };
     ofPoint     getScreenToSurface(ofPoint _pos){ return screenToSurfaceMatrix * _pos; };
     GLfloat*    getGlMatrix() { return glMatrix; };
