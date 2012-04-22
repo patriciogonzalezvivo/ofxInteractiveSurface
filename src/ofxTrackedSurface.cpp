@@ -154,7 +154,7 @@ void ofxTrackedSurface::update(bool _updateSurface , bool _updateHands ){
                 //  The hands image it´s already thresholded so it need to bee processed with out any other process.
                 //
                 handsImage.flagImageChanged();
-                hands.update(handsImage);
+                hands.update(handsImage,-1, 100 , 340*240, 10, 20, true, true);
             }
         }
     } 
@@ -296,24 +296,21 @@ void  ofxTrackedSurface::_objectDeleted(ofxBlob &_blob){
 }
 
 void  ofxTrackedSurface::_handAdded(ofxBlob &_blob){
-    if ((_blob.gotFingers) && 
-        (countDown < 0 )){
-            ofNotifyEvent(handAdded, _blob);
+    if ( (countDown < 0 ) ){
+        ofNotifyEvent(handAdded, _blob);
         //ofLog(OF_LOG_NOTICE,"Hand added at: " + ofToString(_blob.centroid));
     } 
 }
 
 void  ofxTrackedSurface::_handMoved(ofxBlob &_blob){
-    if ((_blob.gotFingers)&& 
-        (countDown < 0 ) ){
+    if ( (countDown < 0 ) ){
             ofNotifyEvent(handMoved, _blob);
             //ofLog(OF_LOG_NOTICE,"Hand moved at: " + ofToString(_blob.centroid));
     } 
 }
 
 void  ofxTrackedSurface::_handDeleted(ofxBlob &_blob){
-    if ((_blob.gotFingers)&& 
-        (countDown < 0 ) ){
+    if ( (countDown < 0 ) ){
             ofNotifyEvent(handDeleted, _blob);
             //ofLog(OF_LOG_NOTICE,"Hand deleted at: " + ofToString(_blob.centroid));
     }
