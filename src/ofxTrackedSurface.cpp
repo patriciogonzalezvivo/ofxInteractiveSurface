@@ -30,7 +30,7 @@ ofxTrackedSurface::ofxTrackedSurface(){
     //
     gui.setup("Panel");
     gui.add(minDist.setup("Alt de Obj", 30.0, 10.0, 100.0));
-    gui.add(maxDist.setup("Dist de Sup", 1000.0, 500.0, 1500));
+    gui.add(maxDist.setup("Dist de Sup", 1000.0, 500.0, 1200));
     gui.add(objectsImageThreshold.setup("humbral", 0, 0, 255));
     gui.loadFromFile("settings.xml");
     

@@ -17,7 +17,7 @@ void ofxKinectAutoCalibrator::init(ofxKinect *_kinect, int _aproxSurfaceArea){
     
     surfaceMinArea = _aproxSurfaceArea; // Aprox minimal Area of the surface
     surfaceMinDistance = 500;       // mm
-    surfaceMaxDistance = 1500;      // mm
+    surfaceMaxDistance = 1200;      // mm
     scanningSliceHeight = 10.0;     // mm
     scanningStepingDistance = 0.5;  // mm
     
@@ -302,7 +302,7 @@ bool ofxKinectAutoCalibrator::doStep2(){
         rta = true;
     } 
     
-    scaleAreaFactor -= 0.2;
+    scaleAreaFactor -= 0.4;
     
     return rta;
 }
