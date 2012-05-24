@@ -22,7 +22,7 @@ public:
     
     ofxKinectAutoCalibrator();
     
-    void        init(ofxKinect *_kinect, int _aproxSurfaceArea = (640*480)*0.4);
+    void        init(ofxKinect *_kinect, int _aproxSurfaceArea = (640*480)*0.2);
     bool        update(ofxSurface &_surface);
     
     int         getCurrentStep() const { return nStep; };

@@ -826,10 +826,10 @@ void ofxSurface::_keyPressed(ofKeyEventArgs &e){
         
     switch (e.key) {
         case OF_KEY_F2:
-            bEditMask = !bEditMask;
+            bEditMode = !bEditMode;
             break;
         case OF_KEY_F3:
-            bEditMode = !bEditMode;
+            bEditMask = !bEditMask;
             break;
         case OF_KEY_F4:
             resetFrame();

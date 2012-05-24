@@ -30,7 +30,7 @@ ofxTrackedSurface::ofxTrackedSurface(){
     //
     gui.setup("Panel");
     gui.add(minDist.setup("Alt de Obj", 30.0, 10.0, 100.0));
-    gui.add(maxDist.setup("Dist de Sup", 1000.0, 500.0, 2000));
+    gui.add(maxDist.setup("Dist de Sup", 1000.0, 500.0, 1500));
     gui.add(objectsImageThreshold.setup("humbral", 0, 0, 255));
     gui.loadFromFile("settings.xml");
     
@@ -274,6 +274,7 @@ void ofxTrackedSurface::_cleanBackground(float &_threshold){
 void  ofxTrackedSurface::_objectAdded(ofxBlob &_blob){
     if ( (surfaceContour.inside(_blob.centroid)) && 
          (countDown < 0 )){
+        _blob.color = kinect.getColorAt(_blob.centroid.x,_blob.centroid.y);
         ofNotifyEvent(objectAdded, _blob);
         //ofLog(OF_LOG_NOTICE,"Object added at: " + ofToString(_blob.centroid));
     }
@@ -282,6 +283,7 @@ void  ofxTrackedSurface::_objectAdded(ofxBlob &_blob){
 void  ofxTrackedSurface::_objectMoved(ofxBlob &_blob){
     if ( (surfaceContour.inside(_blob.centroid)) && 
         (countDown < 0 )){
+        _blob.color = kinect.getColorAt(_blob.centroid.x,_blob.centroid.y);
         ofNotifyEvent(objectMoved, _blob);
         //ofLog(OF_LOG_NOTICE,"Object moved at: " + ofToString(_blob.centroid));
     }
@@ -297,6 +299,7 @@ void  ofxTrackedSurface::_objectDeleted(ofxBlob &_blob){
 
 void  ofxTrackedSurface::_handAdded(ofxBlob &_blob){
     if ( (countDown < 0 ) ){
+        _blob.color.set(0,0,0);
         ofNotifyEvent(handAdded, _blob);
         //ofLog(OF_LOG_NOTICE,"Hand added at: " + ofToString(_blob.centroid));
     } 
@@ -304,15 +307,17 @@ void  ofxTrackedSurface::_handAdded(ofxBlob &_blob){
 
 void  ofxTrackedSurface::_handMoved(ofxBlob &_blob){
     if ( (countDown < 0 ) ){
-            ofNotifyEvent(handMoved, _blob);
-            //ofLog(OF_LOG_NOTICE,"Hand moved at: " + ofToString(_blob.centroid));
+        _blob.color.set(0,0,0);
+        ofNotifyEvent(handMoved, _blob);
+        //ofLog(OF_LOG_NOTICE,"Hand moved at: " + ofToString(_blob.centroid));
     } 
 }
 
 void  ofxTrackedSurface::_handDeleted(ofxBlob &_blob){
     if ( (countDown < 0 ) ){
-            ofNotifyEvent(handDeleted, _blob);
-            //ofLog(OF_LOG_NOTICE,"Hand deleted at: " + ofToString(_blob.centroid));
+        _blob.color.set(0,0,0);
+        ofNotifyEvent(handDeleted, _blob);
+        //ofLog(OF_LOG_NOTICE,"Hand deleted at: " + ofToString(_blob.centroid));
     }
 }
 
