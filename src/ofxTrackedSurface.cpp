@@ -48,8 +48,10 @@ ofxTrackedSurface::ofxTrackedSurface(){
     
     //  Surface preparation
     //
-    surface.loadSettings(0,"settings.xml");    // Load the settings of the surface    
-    load();                                         // Load previus configuration
+    surface.loadSettings(0,"settings.xml");    // Load the settings of the surface  
+    sObjects.loadSettings(1,"settings.xml");
+    sHands.loadSettings(2,"settings.xml");
+    load();                                     // Load previus configuration
 
     bDebug = false;
     
@@ -191,11 +193,13 @@ void ofxTrackedSurface::draw(ofTexture &texture ){
         surface.draw(texture);
         
         if(bDebug){
-            /*
+            //sObjects.draw(objectsImage.getTextureReference());
+            //sHands.draw(handsImage.getTextureReference());
+            
             // Debuging the BlobTracker information
-            objectsImage.draw(0, 0);
-            handsImage.draw(0, objectsImage.getHeight());
-            */
+            objectsImage.draw(0, 100,320,240);
+            handsImage.draw(0, 340,320,240);
+            
             
             //  GUI
             //

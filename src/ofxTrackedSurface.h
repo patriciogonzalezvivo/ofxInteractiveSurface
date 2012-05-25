@@ -56,7 +56,7 @@ private:
     void                    _handDeleted(ofxBlob &_blob);
     
     ofxKinect               kinect;
-    ofxSurface              surface;
+    ofxSurface              surface, sObjects, sHands;
     ofxKinectAutoCalibrator autoSurface;
     
     ofxPanel                gui;
