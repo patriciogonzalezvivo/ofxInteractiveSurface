@@ -17,12 +17,22 @@
 #include "ofxBlobTracker.h"
 #include "ofxKinectAutoCalibrator.h"
 
+enum TrackedSurface {
+    TRACK_JUST_OBJECT,
+    TRACK_JUST_HANDS,
+    TRACK_ACTIVE_OBJECT,
+    TRACK_ACTIVE_HANDS,
+    TRACK_BOTH
+};
+
 class ofxTrackedSurface {
 public:
     ofxTrackedSurface();
     
     void            load();         // Load previus calibration setup
     void            calibrate();    // Make a new calibration
+    
+    void            setTrackedSurfaceID(TrackedSurface _trackedSurfaceID){ trackedSurfaceID = _trackedSurfaceID;};
     
     int             getWidth() const {return  width; };
     int             getHeight() const {return height; };
@@ -31,7 +41,7 @@ public:
     
     bool            isCalibrated() const {bool bCalibrated;};
     
-    void            update(bool _updateSurface = true, bool _updateHands = true );
+    void            update();
     void            draw(ofTexture &texture);
     void            exit();
     
@@ -57,6 +67,7 @@ private:
     
     ofxKinect               kinect;
     ofxSurface              surface;
+    TrackedSurface          trackedSurfaceID;
     ofxKinectAutoCalibrator autoSurface;
     
     ofxPanel                gui;

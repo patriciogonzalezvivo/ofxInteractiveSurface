@@ -52,7 +52,7 @@ ofxTrackedSurface::ofxTrackedSurface(){
     load();                                     // Load previus configuration
 
     bDebug = false;
-    
+    trackedSurfaceID = TRACK_BOTH;
 }
 
 //  Load the previus calibration data
@@ -75,7 +75,7 @@ void ofxTrackedSurface::calibrate(){
 
 // ------------------------------------------------------------------------- MAIN LOOP
 //
-void ofxTrackedSurface::update(bool _updateSurface , bool _updateHands ){
+void ofxTrackedSurface::update(){
     
     //  Update Kinects data
     //
@@ -112,27 +112,68 @@ void ofxTrackedSurface::update(bool _updateSurface , bool _updateHands ){
             
         } else {
             
-            //  Analice the Kinect data´s, clipp it and split it in two images
-            //  once for the surface (surfaceImage) and the other one for the space above the surface (handsImage).
-            //
-            float *depthRaw = kinect.getDistancePixels();
-            unsigned char * handsPixels = handsImage.getPixels();
-            float * surfacePixels = surfaceImage.getPixelsAsFloats();
-            
-            for(int i = 0; i < numPixels; i++, depthRaw++) {
-                if(*depthRaw <= maxDist && *depthRaw >= (maxDist-minDist)){
-                    handsPixels[i] = 0;
-                    surfacePixels[i] = ofMap(*depthRaw, maxDist, (maxDist-minDist), 0.0f ,1.0f);
-                } else if ( *depthRaw < maxDist ){
-                    if ( *depthRaw == 0)
+            if ((trackedSurfaceID == TRACK_BOTH) ||
+                (trackedSurfaceID == TRACK_ACTIVE_OBJECT) || 
+                (trackedSurfaceID == TRACK_ACTIVE_HANDS)){
+                //  Analice the Kinect data´s, clipp it and split it in two images
+                //  once for the surface (surfaceImage) and the other one for the space above the surface (handsImage).
+                //
+                float *depthRaw = kinect.getDistancePixels();
+                unsigned char * handsPixels = handsImage.getPixels();
+                float * surfacePixels = surfaceImage.getPixelsAsFloats();
+                
+                for(int i = 0; i < numPixels; i++, depthRaw++) {
+                    if(*depthRaw <= maxDist && *depthRaw >= (maxDist-minDist)){
                         handsPixels[i] = 0;
-                    else 
-                        handsPixels[i] = 255;
-                } else if ( *depthRaw > (maxDist-minDist) ){
-                    handsPixels[i] = 0;
-                    surfacePixels[i] = 0;
-                } else {
-                    handsPixels[i] = 0;
+                        surfacePixels[i] = ofMap(*depthRaw, maxDist, (maxDist-minDist), 0.0f ,1.0f);
+                    } else if ( *depthRaw < maxDist ){
+                        if ( *depthRaw == 0)
+                            handsPixels[i] = 0;
+                        else 
+                            handsPixels[i] = 255;
+                    } else if ( *depthRaw > (maxDist-minDist) ){
+                        handsPixels[i] = 0;
+                        surfacePixels[i] = 0;
+                    } else {
+                        handsPixels[i] = 0;
+                    }
+                }
+            } else if (trackedSurfaceID == TRACK_JUST_OBJECT){
+                
+                //  JUST update the surface of the table. Width out looking for oclusions from above
+                //
+                float *depthRaw = kinect.getDistancePixels();
+                float * surfacePixels = surfaceImage.getPixelsAsFloats();
+                
+                for(int i = 0; i < numPixels; i++, depthRaw++) {
+                    if(*depthRaw <= maxDist && *depthRaw >= (maxDist-minDist)){
+                        surfacePixels[i] = ofMap(*depthRaw, maxDist, (maxDist-minDist), 0.0f ,1.0f);
+                    } else {
+                        surfacePixels[i] = 0;
+                    } 
+                }
+                
+            } else if (trackedSurfaceID == TRACK_JUST_HANDS){
+                
+                //  TODO!
+                
+                //  JUST update the hands over the table.
+                //
+                
+                float *depthRaw = kinect.getDistancePixels();
+                unsigned char * handsPixels = handsImage.getPixels();
+                
+                for(int i = 0; i < numPixels; i++, depthRaw++) {
+                    if(*depthRaw <= maxDist && *depthRaw >= (maxDist-minDist)){
+                        handsPixels[i] = 0;
+                    } else if ( *depthRaw < maxDist ){
+                        if ( *depthRaw == 0)
+                            handsPixels[i] = 0;
+                        else 
+                            handsPixels[i] = 255;
+                    } else if ( *depthRaw > (maxDist-minDist) ){
+                        handsPixels[i] = 0;
+                    } 
                 }
             }
             
@@ -140,7 +181,9 @@ void ofxTrackedSurface::update(bool _updateSurface , bool _updateHands ){
             //  very rare that need to analice both at the same time. That´s depend on the tipe of interaction it´s 
             //  nedd
             //
-            if (_updateSurface){
+            if ((trackedSurfaceID == TRACK_BOTH) ||
+                (trackedSurfaceID == TRACK_JUST_OBJECT) || 
+                (trackedSurfaceID == TRACK_ACTIVE_OBJECT)){
                 
                 //  The floating point image became a grayscaled image that will be thresholded
                 //
@@ -149,7 +192,9 @@ void ofxTrackedSurface::update(bool _updateSurface , bool _updateHands ){
                 objects.update(objectsImage, objectsImageThreshold );
             }
             
-            if (_updateHands){
+            if ((trackedSurfaceID == TRACK_BOTH) ||
+                (trackedSurfaceID == TRACK_JUST_HANDS) || 
+                (trackedSurfaceID == TRACK_ACTIVE_HANDS)){
                 
                 //  The hands image it´s already thresholded so it need to bee processed with out any other process.
                 //
