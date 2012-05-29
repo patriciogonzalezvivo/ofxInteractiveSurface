@@ -207,6 +207,7 @@ bool ofxKinectAutoCalibrator::doStep1(){
             surfaceContour.clear();
             surfaceContour.addVertexes(contourFinder.blobs[0].pts);
             surfaceContour.simplify(1);
+            surfaceContour = surfaceContour.getSmoothed(2);
             
             //  b. Reset the scale factor of the surface area to 1.0 (non-scalation).Because on next step
             //      it´s going to search for the right amount of scalation in order to place the dots
