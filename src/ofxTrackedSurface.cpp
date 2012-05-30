@@ -143,18 +143,18 @@ void ofxTrackedSurface::update(){
                 //  JUST update the surface of the table. Width out looking for oclusions from above
                 //
                 float *depthRaw = kinect.getDistancePixels();
-                float * surfacePixels = surfaceImage.getPixelsAsFloats();
+                float *surfacePixels = surfaceImage.getPixelsAsFloats();
                 
                 for(int i = 0; i < numPixels; i++, depthRaw++) {
-                    if((*depthRaw <= maxDist) && 
-                       (*depthRaw >= (maxDist-minDist))){
+                    
+                    if((*depthRaw < maxDist) && 
+                       (*depthRaw > (maxDist-minDist))){
                         surfacePixels[i] = ofMap(*depthRaw, maxDist, (maxDist-minDist), 0.0f ,1.0f);
                     } else {
                         surfacePixels[i] = 0;
                     }
                 }
                 
-                cout << "JUST_OBJECTS" << endl;
             } else if (trackedSurfaceID == TRACK_JUST_HANDS){
                 
                 //  TODO!
