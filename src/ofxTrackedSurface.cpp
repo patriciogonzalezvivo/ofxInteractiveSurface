@@ -149,15 +149,12 @@ void ofxTrackedSurface::update(){
                     if((*depthRaw <= maxDist) && 
                        (*depthRaw >= (maxDist-minDist))){
                         surfacePixels[i] = ofMap(*depthRaw, maxDist, (maxDist-minDist), 0.0f ,1.0f);
-                    } else if ( *depthRaw < maxDist ){
-                        surfacePixels[i] = 0;
-                    } else if ( *depthRaw > (maxDist-minDist) ){
-                        surfacePixels[i] = 0;
                     } else {
                         surfacePixels[i] = 0;
                     }
                 }
                 
+                cout << "JUST_OBJECTS" << endl;
             } else if (trackedSurfaceID == TRACK_JUST_HANDS){
                 
                 //  TODO!
