@@ -52,7 +52,7 @@ ofxTrackedSurface::ofxTrackedSurface(){
     load();                                     // Load previus configuration
 
     bDebug = false;
-    trackedSurfaceID = TRACK_BOTH;
+    trackedSurfaceID = TRACK_NONE;
 }
 
 //  Load the previus calibration data
@@ -146,11 +146,16 @@ void ofxTrackedSurface::update(){
                 float * surfacePixels = surfaceImage.getPixelsAsFloats();
                 
                 for(int i = 0; i < numPixels; i++, depthRaw++) {
-                    if(*depthRaw <= maxDist && *depthRaw >= (maxDist-minDist)){
+                    if((*depthRaw <= maxDist) && 
+                       (*depthRaw >= (maxDist-minDist))){
                         surfacePixels[i] = ofMap(*depthRaw, maxDist, (maxDist-minDist), 0.0f ,1.0f);
+                    } else if ( *depthRaw < maxDist ){
+                        surfacePixels[i] = 0;
+                    } else if ( *depthRaw > (maxDist-minDist) ){
+                        surfacePixels[i] = 0;
                     } else {
                         surfacePixels[i] = 0;
-                    } 
+                    }
                 }
                 
             } else if (trackedSurfaceID == TRACK_JUST_HANDS){

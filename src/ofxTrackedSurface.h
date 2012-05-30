@@ -18,6 +18,7 @@
 #include "ofxKinectAutoCalibrator.h"
 
 enum TrackedSurface {
+    TRACK_NONE,
     TRACK_JUST_OBJECT,
     TRACK_JUST_HANDS,
     TRACK_ACTIVE_OBJECT,
