@@ -146,7 +146,6 @@ void ofxTrackedSurface::update(){
                 float *surfacePixels = surfaceImage.getPixelsAsFloats();
                 
                 for(int i = 0; i < numPixels; i++, depthRaw++) {
-                    
                     if((*depthRaw < maxDist) && 
                        (*depthRaw > (maxDist-minDist))){
                         surfacePixels[i] = ofMap(*depthRaw, maxDist, (maxDist-minDist), 0.0f ,1.0f);
@@ -161,7 +160,6 @@ void ofxTrackedSurface::update(){
                 
                 //  JUST update the hands over the table.
                 //
-                
                 float *depthRaw = kinect.getDistancePixels();
                 unsigned char * handsPixels = handsImage.getPixels();
                 
