@@ -133,7 +133,7 @@ void ofxTrackedSurface::update(){
                             handsPixels[i] = 255;
                     } else if ( *depthRaw > (maxDist-minDist) ){
                         handsPixels[i] = 0;
-                        surfacePixels[i] = 0;
+                        surfacePixels[i] = 0.0f;
                     } else {
                         handsPixels[i] = 0;
                     }
@@ -146,11 +146,10 @@ void ofxTrackedSurface::update(){
                 float *surfacePixels = surfaceImage.getPixelsAsFloats();
                 
                 for(int i = 0; i < numPixels; i++, depthRaw++) {
-                    if((*depthRaw < maxDist) && 
-                       (*depthRaw > (maxDist-minDist))){
+                    if( *depthRaw < maxDist && *depthRaw > (maxDist-minDist)){
                         surfacePixels[i] = ofMap(*depthRaw, maxDist, (maxDist-minDist), 0.0f ,1.0f);
                     } else {
-                        surfacePixels[i] = 0;
+                        surfacePixels[i] = 0.0f;
                     }
                 }
                 
