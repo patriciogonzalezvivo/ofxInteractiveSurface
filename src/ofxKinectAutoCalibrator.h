@@ -1,9 +1,9 @@
 //
 //  ofxKinectAutoSurface.h
-//  mdt-Core
+//  ofxInteractiveSurface
 //
-//  Created by Patricio González Vivo on 3/28/12.
-//  Copyright (c) 2012 PatricioGonzalezVivo.com. All rights reserved.
+//  Created by Patricio Gonzalez Vivo on 5/3/12.
+//  Copyright (c) 2012 http://PatricioGonzalezVivo.com . All rights reserved.
 //
 
 #ifndef OFXKINECTAUTOCALIBRATOR
@@ -15,7 +15,7 @@
 
 #include "ofxOpenCv.h"
 #include "ofxKinect.h"
-#include "ofxSurface.h"
+#include "ofxInteractiveViewPort.h"
 
 class ofxKinectAutoCalibrator {
 public:
@@ -23,7 +23,7 @@ public:
     ofxKinectAutoCalibrator();
     
     void        init(ofxKinect *_kinect, int _aproxSurfaceArea = (640*480)*0.2);
-    bool        update(ofxSurface &_surface);
+    bool        update(ofxInteractiveViewPort &_view);
     
     int         getCurrentStep() const { return nStep; };
     float       getSurfaceDistance() const { return surfaceDistance; };

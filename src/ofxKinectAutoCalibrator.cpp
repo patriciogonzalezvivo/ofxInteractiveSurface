@@ -1,9 +1,9 @@
 //
 //  ofxKinectAutoCalibrator.cpp
-//  mdt-Core
+//  ofxInteractiveSurface
 //
-//  Created by Patricio González Vivo on 3/28/12.
-//  Copyright (c) 2012 PatricioGonzalezVivo.com. All rights reserved.
+//  Created by Patricio Gonzalez Vivo on 5/3/12.
+//  Copyright (c) 2012 http://PatricioGonzalezVivo.com . All rights reserved.
 //
 
 #include "ofxKinectAutoCalibrator.h"
@@ -45,7 +45,7 @@ void ofxKinectAutoCalibrator::init(ofxKinect *_kinect, int _aproxSurfaceArea){
     bDone = false;
 }
 
-bool ofxKinectAutoCalibrator::update(ofxSurface &_surface){
+bool ofxKinectAutoCalibrator::update(ofxInteractiveViewPort &_view){
 
     if (nStep == 0){
     
@@ -57,7 +57,7 @@ bool ofxKinectAutoCalibrator::update(ofxSurface &_surface){
             maskCorners.addVertex(1.0,0.0);
             maskCorners.addVertex(1.0,1.0);
             maskCorners.addVertex(0.0,1.0);
-            _surface.setMask(maskCorners);
+            _view.setMask(maskCorners);
             
             nStep++;
         }
@@ -75,7 +75,7 @@ bool ofxKinectAutoCalibrator::update(ofxSurface &_surface){
             
             //  Pass it to a ofxPatch::maskCorners
             //
-            _surface.setMask(normalizedContour);
+            _view.setMask(normalizedContour);
             
             nStep++;
         }
@@ -86,7 +86,7 @@ bool ofxKinectAutoCalibrator::update(ofxSurface &_surface){
             //  Once it found it get the real dots position in relation with the screen.
             //
             for (int i = 0; i < 4; i++){
-                screenDots[i] = _surface.getSurfaceToScreen(realDots[i]);
+                screenDots[i] = _view.getSurfaceToScreen(realDots[i]);
             }
             
             nStep++;
@@ -113,7 +113,7 @@ bool ofxKinectAutoCalibrator::update(ofxSurface &_surface){
         for (int i = 0; i < 4; i++){
             coorners[i] = getkinectToScreen(coorners[i]);
         }
-        _surface.setCoorners(coorners);
+        _view.setCoorners(coorners);
         
         // Clear the fbo
         //

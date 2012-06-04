@@ -1,0 +1,42 @@
+<surface_distance>1133</surface_distance>
+<surface_height>50.05</surface_height>
+<threshold>109</threshold>
+<view>
+    <id>0</id>
+    <texture>
+        <point>
+            <x>0.0</x>
+            <y>0.0</y>
+        </point>
+        <point>
+            <x>640.0</x>
+            <y>0.0</y>
+        </point>
+        <point>
+            <x>640.0</x>
+            <y>480.0</y>
+        </point>
+        <point>
+            <x>0.0</x>
+            <y>480.0</y>
+        </point>
+    </texture>
+    <mask>
+        <point>
+            <x>0.0</x>
+            <y>0.0</y>
+        </point>
+        <point>
+            <x>1.0</x>
+            <y>0.0</y>
+        </point>
+        <point>
+            <x>1.0</x>
+            <y>1.0</y>
+        </point>
+        <point>
+            <x>0.0</x>
+            <y>1.0</y>
+        </point>
+    </mask>
+</view>
