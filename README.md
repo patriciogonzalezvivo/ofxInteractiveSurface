@@ -22,3 +22,7 @@ Width this addon you can make any planar surface into a interactive ( multiTouch
 * [ofxBlobTracker](https://github.com/patriciogonzalezvivo/ofxBlobTracker)
 
 * ofxGui ( oF core Addon )
+
+* ofxOpenCv ( oF core Addon )
+
+* ofxXMLSettings ( oF core Addon )

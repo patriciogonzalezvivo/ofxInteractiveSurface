@@ -19,7 +19,7 @@
 #include "ofxInteractiveViewPort.h"
 #include "ofxKinectAutoCalibrator.h"
 
-enum TrackMode {
+enum ofxTrackMode {
     TRACK_NONE,
     TRACK_JUST_OBJECT,
     TRACK_JUST_HANDS,
@@ -35,7 +35,7 @@ public:
     void            load();         // Load previus calibration setup from "settings.xml"
     void            calibrate();    // Make a new calibration
     
-    void            setTrackMode(TrackMode _trackMode){ trackMode = _trackMode;};
+    void            setTrackMode(ofxTrackMode _trackMode){ trackMode = _trackMode;};
     
     int             getWidth() const {return  width; };
     int             getHeight() const {return height; };
@@ -68,7 +68,7 @@ private:
     void                    _handDeleted(ofxBlob &_blob);
     
     ofxKinect               kinect;
-    TrackMode               trackMode;
+    ofxTrackMode            trackMode;
     ofxInteractiveViewPort  view;
     ofxKinectAutoCalibrator autoCalibrator;
     
