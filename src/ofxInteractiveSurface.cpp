@@ -236,9 +236,11 @@ void ofxInteractiveSurface::draw(ofTexture &texture ){
         
         if(bDebug){
             // Debuging the BlobTracker information
-            objectsImage.draw(0, 100,320,240);
-            handsImage.draw(0, 340,320,240);
-            
+            ofSetColor(255,255);
+            objectsImage.draw(ofGetWidth()-320,10,320,240);
+            ofDrawBitmapString("Layer 0 (Objects)", ofGetWidth()-320+15, 25);
+            handsImage.draw(ofGetWidth()-320,260,320,240);
+            ofDrawBitmapString("Layer 1 (Hands)", ofGetWidth()-320+15, 260);
             
             //  GUI
             //

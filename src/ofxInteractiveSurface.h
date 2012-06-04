@@ -39,7 +39,7 @@ public:
     
     int             getWidth() const {return  width; };
     int             getHeight() const {return height; };
-    ofPolyline      getSurfaceContour(){ return surfaceContour; };
+    //ofPolyline      getSurfaceContour(){ return surfaceContour; };
     
     bool            isCalibrated() const {bool bCalibrated;};
     
