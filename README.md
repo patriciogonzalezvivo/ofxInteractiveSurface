@@ -1,7 +1,8 @@
 #ofxInteractiveSurface#
 #### by [Patricio Gonzalez Vivo](http://www.patriciogonzalezvivo.com) 
 
-Width this addon you can make any planar surface into a interactive ( multiTouch & gestures reactive) surface  m let you match planar using a KinectSensor.
+Width this addon you can make interactive ( multiTouch & gestures reactive) surfaces using a KinectSensor.
+Note: For best results face the kinect directly to the surface and align the proyecto to it.
 
 ## Components
 
@@ -13,7 +14,9 @@ Width this addon you can make any planar surface into a interactive ( multiTouch
 
 ## How it works
 
+Until I made a proper graphical explanation here it´s the post on the forum:
 
+[http://forum.openframeworks.cc/index.php?topic=9908.new;topicseen#new](http://forum.openframeworks.cc/index.php?topic=9908.new;topicseen#new)
 
 
 ## Required Addons
