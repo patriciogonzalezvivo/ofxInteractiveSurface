@@ -146,7 +146,7 @@ void ofxInteractiveSurface::update(){
                 float *surfacePixels = surfaceImage.getPixelsAsFloats();
                 
                 for(int i = 0; i < numPixels; i++, depthRaw++) {
-                    if( *depthRaw < maxDist && *depthRaw > (maxDist-minDist)){
+                    if( *depthRaw < (maxDist-minDist*0.5) && *depthRaw > (maxDist-minDist)){
                         surfacePixels[i] = ofMap(*depthRaw, maxDist, (maxDist-minDist), 0.0f ,1.0f);
                     } else {
                         surfacePixels[i] = 0.0f;
