@@ -1,9 +1,9 @@
 //
-//  ofxTrackedSurface.h
-//  mdt-Core
+//  ofxInteractiveSurface.h
+//  ofxInteractiveSurface
 //
-//  Created by Patricio González Vivo on 3/31/12.
-//  Copyright (c) 2012 PatricioGonzalezVivo.com. All rights reserved.
+//  Created by Patricio Gonzalez Vivo on 5/3/12.
+//  Copyright (c) 2012 http://PatricioGonzalezVivo.com . All rights reserved.
 //
 
 #ifndef OFXTRACKEDSURFACE
@@ -12,12 +12,14 @@
 #include "ofMain.h"
 
 #include "ofxKinect.h"
+
 #include "ofxOpenCv.h"
-#include "ofxSurface.h"
 #include "ofxBlobTracker.h"
+
+#include "ofxInteractiveViewPort.h"
 #include "ofxKinectAutoCalibrator.h"
 
-enum TrackedSurface {
+enum TrackMode {
     TRACK_NONE,
     TRACK_JUST_OBJECT,
     TRACK_JUST_HANDS,
@@ -26,18 +28,17 @@ enum TrackedSurface {
     TRACK_BOTH
 };
 
-class ofxTrackedSurface {
+class ofxInteractiveSurface {
 public:
-    ofxTrackedSurface();
+    ofxInteractiveSurface();
     
-    void            load();         // Load previus calibration setup
+    void            load();         // Load previus calibration setup from "settings.xml"
     void            calibrate();    // Make a new calibration
     
-    void            setTrackedSurfaceID(TrackedSurface _trackedSurfaceID){ trackedSurfaceID = _trackedSurfaceID;};
+    void            setTrackMode(TrackMode _trackMode){ trackMode = _trackMode;};
     
     int             getWidth() const {return  width; };
     int             getHeight() const {return height; };
-    ofxSurface&     getSurface() { return surface; };
     ofPolyline      getSurfaceContour(){ return surfaceContour; };
     
     bool            isCalibrated() const {bool bCalibrated;};
@@ -67,9 +68,9 @@ private:
     void                    _handDeleted(ofxBlob &_blob);
     
     ofxKinect               kinect;
-    ofxSurface              surface;
-    TrackedSurface          trackedSurfaceID;
-    ofxKinectAutoCalibrator autoSurface;
+    TrackMode               trackMode;
+    ofxInteractiveViewPort  view;
+    ofxKinectAutoCalibrator autoCalibrator;
     
     ofxPanel                gui;
     ofxFloatSlider          minDist;

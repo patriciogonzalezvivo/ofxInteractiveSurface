@@ -1,9 +1,9 @@
 //
-//  ofxSurface.h
-//  ofxSurface
+//  ofxInteractiveViewPort.h
+//  ofxInteractiveSurface
 //
-//  Created by Patricio González Vivo on 3/5/12.
-//  Copyright (c) 2012 http://www.PatricioGonzalezVivo.com All rights reserved.
+//  Created by Patricio Gonzalez Vivo on 5/3/12.
+//  Copyright (c) 2012 http://PatricioGonzalezVivo.com . All rights reserved.
 //
 
 #ifndef OFXSURFACE
@@ -12,10 +12,10 @@
 #include "ofMain.h"
 #include "ofxXmlSettings.h"
 
-class ofxSurface {
+class ofxInteractiveViewPort {
 public:
   
-    ofxSurface();
+    ofxInteractiveViewPort();
     
     bool        loadSettings(int _nTag, string _configFile = "none");
     bool        saveSettings(string _configFile = "none");

@@ -1,21 +1,21 @@
 //
-//  ofxSurface.cpp
-//  emptyExample
+//  ofxInteractiveViewPort.cpp
+//  ofxInteractiveSurface
 //
-//  Created by Patricio Gonzalez Vivo on 3/5/12.
-//  Copyright (c) 2012 http://www.PatricioGonzalezVivo.com All rights reserved.
+//  Created by Patricio Gonzalez Vivo on 5/3/12.
+//  Copyright (c) 2012 http://PatricioGonzalezVivo.com . All rights reserved.
 //
 
-#include "ofxSurface.h"
+#include "ofxInteractiveViewPort.h"
 
-ofxSurface::ofxSurface(){
+ofxInteractiveViewPort::ofxInteractiveViewPort(){
     // Link the core events in order to catch mouse and keys
     //
-    ofAddListener(ofEvents().mouseMoved, this, &ofxSurface::_mouseMoved);
-	ofAddListener(ofEvents().mousePressed, this, &ofxSurface::_mousePressed);
-	ofAddListener(ofEvents().mouseDragged, this, &ofxSurface::_mouseDragged);
-	ofAddListener(ofEvents().mouseReleased, this, &ofxSurface::_mouseReleased);
-	ofAddListener(ofEvents().keyPressed, this, &ofxSurface::_keyPressed);
+    ofAddListener(ofEvents().mouseMoved, this, &ofxInteractiveViewPort::_mouseMoved);
+	ofAddListener(ofEvents().mousePressed, this, &ofxInteractiveViewPort::_mousePressed);
+	ofAddListener(ofEvents().mouseDragged, this, &ofxInteractiveViewPort::_mouseDragged);
+	ofAddListener(ofEvents().mouseReleased, this, &ofxInteractiveViewPort::_mouseReleased);
+	ofAddListener(ofEvents().keyPressed, this, &ofxInteractiveViewPort::_keyPressed);
     
     // This two files handle the selected points of the mask or texture corners
     // if itÂ´s -1 means nothing is selected, other wise the number itÂ´s the position
@@ -81,7 +81,7 @@ ofxSurface::ofxSurface(){
 }
 
 // ------------------------------------------------------------- SETUP
-bool ofxSurface::loadSettings( int _nTag, string _configFile){
+bool ofxInteractiveViewPort::loadSettings( int _nTag, string _configFile){
     bool loaded = false;
     
     ofxXmlSettings XML;
@@ -92,7 +92,7 @@ bool ofxSurface::loadSettings( int _nTag, string _configFile){
     if (XML.loadFile(configFile)){
         maskCorners.clear();
         
-        if (XML.pushTag("surface", _nTag)){
+        if (XML.pushTag("view", _nTag)){
             
             // Load the type and do what it have to 
             //
@@ -132,12 +132,12 @@ bool ofxSurface::loadSettings( int _nTag, string _configFile){
             XML.popTag(); // Pop Surface
         }    
     } else
-        ofLog(OF_LOG_ERROR,"ofxSurface: loading patch n¼ " + ofToString(nId) + " on " + configFile );
+        ofLog(OF_LOG_ERROR,"ofxInteractiveViewPort: loading patch n¼ " + ofToString(nId) + " on " + configFile );
     
     return loaded;
 }
 
-bool ofxSurface::saveSettings(string _configFile){
+bool ofxInteractiveViewPort::saveSettings(string _configFile){
     bool saved = false;
     
     ofxXmlSettings XML;
@@ -215,12 +215,12 @@ bool ofxSurface::saveSettings(string _configFile){
             }
         }
     } else
-        ofLog(OF_LOG_ERROR, "ofxSurface::saveSettings couldn't save " + ofToString(nId) + " surface on " + configFile);
+        ofLog(OF_LOG_ERROR, "ofxInteractiveViewPort::saveSettings couldn't save " + ofToString(nId) + " surface on " + configFile);
     
     return saved;
 }
 
-void ofxSurface::setCoorners(ofPoint _coorners[4]){
+void ofxInteractiveViewPort::setCoorners(ofPoint _coorners[4]){
     for (int i = 0; i < 4; i++){
         textureCorners[i].set(_coorners[i]);
     }
@@ -229,7 +229,7 @@ void ofxSurface::setCoorners(ofPoint _coorners[4]){
     bUpdateMask = true;
 }
 
-void ofxSurface::setMask(ofPolyline &_polyLine){ 
+void ofxInteractiveViewPort::setMask(ofPolyline &_polyLine){ 
     
     maskCorners = _polyLine;
     
@@ -238,7 +238,7 @@ void ofxSurface::setMask(ofPolyline &_polyLine){
 
 // ------------------------------------------------------ LOOPS
 //
-void ofxSurface::draw( ofTexture &texture ){
+void ofxInteractiveViewPort::draw( ofTexture &texture ){
     // If the texture change or itÂ´s new it will update some parameters
     // like the size of the FBO, de mask and the matrix
     //
@@ -355,7 +355,7 @@ void ofxSurface::draw( ofTexture &texture ){
 
 // -------------------------------------------------------- ACTIONS
 //
-void ofxSurface::move(ofPoint _pos){
+void ofxInteractiveViewPort::move(ofPoint _pos){
     ofVec2f diff = _pos - getPos();
     
     for(int i = 0; i < 4; i++){
@@ -365,7 +365,7 @@ void ofxSurface::move(ofPoint _pos){
     doScreenToSurfaceMatrix();
 }
 
-void ofxSurface::scale(float _scale){
+void ofxInteractiveViewPort::scale(float _scale){
     for(int i = 0; i < 4; i++){
         ofVec2f center = getPos();
         ofVec2f fromCenterToCorner = textureCorners[i] - center;
@@ -382,7 +382,7 @@ void ofxSurface::scale(float _scale){
     doSurfaceToScreenMatrix();
 }
 
-void ofxSurface::rotate(float _rotAngle){
+void ofxInteractiveViewPort::rotate(float _rotAngle){
     for(int i = 0; i < 4; i++){
         ofVec2f center = getPos();
         ofVec2f fromCenterToCorner = textureCorners[i] - center;
@@ -399,7 +399,7 @@ void ofxSurface::rotate(float _rotAngle){
     doSurfaceToScreenMatrix();
 }
 
-void ofxSurface::resetMask(){
+void ofxInteractiveViewPort::resetMask(){
     maskCorners.clear();
     
     ofPoint newPoint = ofPoint(0.0,0.0,0.0);
@@ -412,7 +412,7 @@ void ofxSurface::resetMask(){
     maskCorners.addVertex(newPoint);
 }
 
-void ofxSurface::resetFrame(){
+void ofxInteractiveViewPort::resetFrame(){
     textureCorners[0].set(0, 0);
     textureCorners[1].set(width, 0);
     textureCorners[2].set(width, height);
@@ -423,7 +423,7 @@ void ofxSurface::resetFrame(){
 }
 
 
-void ofxSurface::doSurfaceToScreenMatrix(){
+void ofxInteractiveViewPort::doSurfaceToScreenMatrix(){
     ofPoint src[4];
     
     src[0].set(0, 0);
@@ -507,7 +507,7 @@ void ofxSurface::doSurfaceToScreenMatrix(){
     surfaceToScreenMatrix(3,3)=1;
 }
 
-void ofxSurface::doScreenToSurfaceMatrix(){
+void ofxInteractiveViewPort::doScreenToSurfaceMatrix(){
     ofPoint dst[4];
     
     dst[0].set(0, 0);
@@ -577,7 +577,7 @@ void ofxSurface::doScreenToSurfaceMatrix(){
     
 }
 
-void ofxSurface::doGaussianElimination(float *input, int n){
+void ofxInteractiveViewPort::doGaussianElimination(float *input, int n){
     // ported to c from pseudocode in
     // http://en.wikipedia.org/wiki/Gaussian_elimination
     
@@ -643,13 +643,13 @@ void ofxSurface::doGaussianElimination(float *input, int n){
 
 // -------------------------------------------------------- Mouse Events
 
-void ofxSurface::_mouseMoved(ofMouseEventArgs &e){
+void ofxInteractiveViewPort::_mouseMoved(ofMouseEventArgs &e){
     ofVec2f mouse = ofVec2f(e.x, e.y);
     
     bActive = textureCorners.inside(mouse);
 }
 
-void ofxSurface::_mousePressed(ofMouseEventArgs &e){
+void ofxInteractiveViewPort::_mousePressed(ofMouseEventArgs &e){
     ofVec3f mouse = ofVec3f(e.x, e.y, 0.0);
 
     if (bEditMode){
@@ -711,7 +711,7 @@ void ofxSurface::_mousePressed(ofMouseEventArgs &e){
     }
 }
 
-void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
+void ofxInteractiveViewPort::_mouseDragged(ofMouseEventArgs &e){
     ofVec3f mouse = ofVec3f(e.x, e.y,0);
     ofVec3f mouseLast = ofVec3f(ofGetPreviousMouseX(),ofGetPreviousMouseY(),0);
     
@@ -806,7 +806,7 @@ void ofxSurface::_mouseDragged(ofMouseEventArgs &e){
     mouseLast = ofVec2f(e.x, e.y);
 }
 
-void ofxSurface::_mouseReleased(ofMouseEventArgs &e){
+void ofxInteractiveViewPort::_mouseReleased(ofMouseEventArgs &e){
     if (bEditMode){
         if (!bEditMask){
             if (( selectedTextureCorner >= 0) && ( selectedTextureCorner < 4) ){
@@ -822,7 +822,7 @@ void ofxSurface::_mouseReleased(ofMouseEventArgs &e){
 }
 
 //Key Events
-void ofxSurface::_keyPressed(ofKeyEventArgs &e){
+void ofxInteractiveViewPort::_keyPressed(ofKeyEventArgs &e){
         
     switch (e.key) {
         case OF_KEY_F2:

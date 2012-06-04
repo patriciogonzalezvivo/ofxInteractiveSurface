@@ -1,14 +1,14 @@
 //
-//  ofxTrackedSurface.cpp
-//  mdt-Core
+//  ofxInteractiveSurface.cpp
+//  ofxInteractiveSurface
 //
-//  Created by Patricio González Vivo on 3/31/12.
-//  Copyright (c) 2012 PatricioGonzalezVivo.com. All rights reserved.
+//  Created by Patricio Gonzalez Vivo on 5/3/12.
+//  Copyright (c) 2012 http://PatricioGonzalezVivo.com . All rights reserved.
 //
 
-#include "ofxTrackedSurface.h"
+#include "ofxInteractiveSurface.h"
 
-ofxTrackedSurface::ofxTrackedSurface(){
+ofxInteractiveSurface::ofxInteractiveSurface(){
     
     // Initialize the kinect driver
     //
@@ -29,37 +29,37 @@ ofxTrackedSurface::ofxTrackedSurface(){
     //  GUI
     //
     gui.setup("Panel");
-    gui.add(minDist.setup("Alt de Obj", 30.0, 10.0, 100.0));
-    gui.add(maxDist.setup("Dist de Sup", 1000.0, 500.0, 1200));
-    gui.add(objectsImageThreshold.setup("humbral", 0, 0, 255));
+    gui.add(maxDist.setup("surface_distance", 1000.0, 500.0, 1200));
+    gui.add(minDist.setup("surface_height", 30.0, 10.0, 100.0));
+    gui.add(objectsImageThreshold.setup("threshold", 0, 0, 255));
     gui.loadFromFile("settings.xml");
     
     // Events Listeners
     //
-    minDist.addListener(this,&ofxTrackedSurface::_cleanBackground);
+    minDist.addListener(this,&ofxInteractiveSurface::_cleanBackground);
     
-    ofAddListener(hands.blobAdded, this, &ofxTrackedSurface::_handAdded);
-    ofAddListener(hands.blobMoved, this, &ofxTrackedSurface::_handMoved);
-    ofAddListener(hands.blobDeleted, this, &ofxTrackedSurface::_handDeleted);
+    ofAddListener(hands.blobAdded, this, &ofxInteractiveSurface::_handAdded);
+    ofAddListener(hands.blobMoved, this, &ofxInteractiveSurface::_handMoved);
+    ofAddListener(hands.blobDeleted, this, &ofxInteractiveSurface::_handDeleted);
     
-    ofAddListener(objects.blobAdded, this, &ofxTrackedSurface::_objectAdded);
-    ofAddListener(objects.blobMoved, this, &ofxTrackedSurface::_objectMoved);
-    ofAddListener(objects.blobDeleted, this, &ofxTrackedSurface::_objectDeleted);
+    ofAddListener(objects.blobAdded, this, &ofxInteractiveSurface::_objectAdded);
+    ofAddListener(objects.blobMoved, this, &ofxInteractiveSurface::_objectMoved);
+    ofAddListener(objects.blobDeleted, this, &ofxInteractiveSurface::_objectDeleted);
     
     //  Surface preparation
     //
-    surface.loadSettings(0,"settings.xml");    // Load the settings of the surface  
+    view.loadSettings(0,"settings.xml");    // Load the settings of the surface  
     load();                                     // Load previus configuration
 
     bDebug = false;
-    trackedSurfaceID = TRACK_NONE;
+    trackMode = TRACK_NONE;
 }
 
 //  Load the previus calibration data
 //
-void ofxTrackedSurface::load(){
+void ofxInteractiveSurface::load(){
     ofSetFullscreen(true);      // Fullscreen it´s need if the surface it´s on other screen (on dual monitor)
-    surfaceContour = surface.getMask();                     // Get a local copy of the surface
+    surfaceContour = view.getMask();                     // Get a local copy of the surface
     kinect.setDepthClipping((maxDist-minDist),maxDist);     // Do the right clipping
     countDown = 200;                                        // The count down it´s to make a background sustraction
     bCalibrated = true;                                     // Turn the calibration flag on
@@ -67,15 +67,15 @@ void ofxTrackedSurface::load(){
 
 //  Makes a new calibration
 //
-void ofxTrackedSurface::calibrate(){
+void ofxInteractiveSurface::calibrate(){
     ofSetFullscreen(true);      // Fullscreen it's need for calibration
     bCalibrated = false;        // Turn the calibration flag to off
-    autoSurface.init(&kinect);  // Initialice calibration
+    autoCalibrator.init(&kinect);  // Initialice calibration
 }
 
 // ------------------------------------------------------------------------- MAIN LOOP
 //
-void ofxTrackedSurface::update(){
+void ofxInteractiveSurface::update(){
     
     //  Update Kinects data
     //
@@ -101,20 +101,20 @@ void ofxTrackedSurface::update(){
             
             //  It´s on calibration process ( bCaligrated = false )
             //
-            bCalibrated = autoSurface.update( surface );    // this routine goes for the 6 steps and returns true when finish
+            bCalibrated = autoCalibrator.update( view );    // this routine goes for the 6 steps and returns true when finish
             
             //  When finish the 6 steps it´s going enter in this IF just one time.
             //
             if (bCalibrated){
-                maxDist = autoSurface.getSurfaceDistance(); // Get the surface where he found the surface ...
+                maxDist = autoCalibrator.getSurfaceDistance(); // Get the surface where he found the surface ...
                 load();                                     // ... and load the data. The process of calibration it will end
             }                                               // ... with the countDown for storing a background
             
         } else {
             
-            if ((trackedSurfaceID == TRACK_BOTH) ||
-                (trackedSurfaceID == TRACK_ACTIVE_OBJECT) || 
-                (trackedSurfaceID == TRACK_ACTIVE_HANDS)){
+            if ((trackMode == TRACK_BOTH) ||
+                (trackMode == TRACK_ACTIVE_OBJECT) || 
+                (trackMode == TRACK_ACTIVE_HANDS)){
                 //  Analice the Kinect data´s, clipp it and split it in two images
                 //  once for the surface (surfaceImage) and the other one for the space above the surface (handsImage).
                 //
@@ -138,7 +138,7 @@ void ofxTrackedSurface::update(){
                         handsPixels[i] = 0;
                     }
                 }
-            } else if (trackedSurfaceID == TRACK_JUST_OBJECT){
+            } else if (trackMode == TRACK_JUST_OBJECT){
                 
                 //  JUST update the surface of the table. Width out looking for oclusions from above
                 //
@@ -153,7 +153,7 @@ void ofxTrackedSurface::update(){
                     }
                 }
                 
-            } else if (trackedSurfaceID == TRACK_JUST_HANDS){
+            } else if (trackMode == TRACK_JUST_HANDS){
                 
                 //  TODO!
                 
@@ -180,9 +180,9 @@ void ofxTrackedSurface::update(){
             //  very rare that need to analice both at the same time. That´s depend on the tipe of interaction it´s 
             //  nedd
             //
-            if ((trackedSurfaceID == TRACK_BOTH) ||
-                (trackedSurfaceID == TRACK_JUST_OBJECT) || 
-                (trackedSurfaceID == TRACK_ACTIVE_OBJECT)){
+            if ((trackMode == TRACK_BOTH) ||
+                (trackMode == TRACK_JUST_OBJECT) || 
+                (trackMode == TRACK_ACTIVE_OBJECT)){
                 
                 //  The floating point image became a grayscaled image that will be thresholded
                 //
@@ -191,9 +191,9 @@ void ofxTrackedSurface::update(){
                 objects.update(objectsImage, objectsImageThreshold );
             }
             
-            if ((trackedSurfaceID == TRACK_BOTH) ||
-                (trackedSurfaceID == TRACK_JUST_HANDS) || 
-                (trackedSurfaceID == TRACK_ACTIVE_HANDS)){
+            if ((trackMode == TRACK_BOTH) ||
+                (trackMode == TRACK_JUST_HANDS) || 
+                (trackMode == TRACK_ACTIVE_HANDS)){
                 
                 //  The hands image it´s already thresholded so it need to bee processed with out any other process.
                 //
@@ -204,18 +204,18 @@ void ofxTrackedSurface::update(){
     } 
 }
 
-void ofxTrackedSurface::draw(ofTexture &texture ){
+void ofxInteractiveSurface::draw(ofTexture &texture ){
     if (!bCalibrated){
         
         //  It´s important to achive a good contrast for the calibration
         //  That´s why it will force a black background and ridd of the surface coorners lines.
         ofBackground(ofColor::black);
-        surface.bEditMode = false;
-        surface.bEditMask = false;
-        surface.bActive = true;
+        view.bEditMode = false;
+        view.bEditMask = false;
+        view.bActive = true;
         
         ofSetColor(255,255);
-        surface.draw( autoSurface.getTextureReference() );
+        view.draw( autoCalibrator.getTextureReference() );
         
         /*
         if(bDebug)
@@ -232,7 +232,7 @@ void ofxTrackedSurface::draw(ofTexture &texture ){
         }
         
         // Passthrou the texture of what it´s need to draw.
-        surface.draw(texture);
+        view.draw(texture);
         
         if(bDebug){
             // Debuging the BlobTracker information
@@ -255,19 +255,19 @@ void ofxTrackedSurface::draw(ofTexture &texture ){
             //
             ofPushMatrix();
             ofSetColor(255,100);
-            glMultMatrixf( surface.getGlMatrix() );
+            glMultMatrixf( view.getGlMatrix() );
             ofPushStyle();
             ofNoFill();
             for( int i=0; i<(int)objects.size(); i++ ) {
                 if ( surfaceContour.inside( objects[i].centroid) ){
                     
                     ofSetColor(221, 0, 204, 200);
-                    objects[i].drawBox(0,0,surface.getWidth(),surface.getHeight());
+                    objects[i].drawBox(0,0,view.getWidth(),view.getHeight());
                     ofSetColor(0,255,255);
-                    objects[i].drawContours(0,0,surface.getWidth(),surface.getHeight());
+                    objects[i].drawContours(0,0,view.getWidth(),view.getHeight());
                     
                     ofSetColor(255,255);
-                    ofDrawBitmapString(ofToString(objects[i].id), objects[i].centroid.x * surface.getWidth(), objects[i].centroid.y * surface.getHeight() );
+                    ofDrawBitmapString(ofToString(objects[i].id), objects[i].centroid.x * view.getWidth(), objects[i].centroid.y * view.getHeight() );
                 }
             }
             ofPopStyle();
@@ -278,20 +278,20 @@ void ofxTrackedSurface::draw(ofTexture &texture ){
             //
             ofPushMatrix();
             ofSetColor(255,200);
-            glMultMatrixf( surface.getGlMatrix() );
+            glMultMatrixf( view.getGlMatrix() );
             ofPushStyle();
             for( int i=0; i<(int)hands.size(); i++ ) {
                 ofNoFill();
                 ofSetColor(0,255,255);
-                hands[i].drawContours(0,0,surface.getWidth(),surface.getHeight());
+                hands[i].drawContours(0,0,view.getWidth(),view.getHeight());
                 
                 if (hands[i].gotFingers){
                     ofFill();
                     ofSetColor(0,0,255);
-                    ofCircle(hands[i].palm.x * surface.getWidth(), hands[i].palm.y * surface.getHeight(),10);
+                    ofCircle(hands[i].palm.x * view.getWidth(), hands[i].palm.y * view.getHeight(),10);
                     for (int j = 0; j < hands[i].nFingers ; j++){
                         ofSetColor(255,0,0);
-                        ofCircle(hands[i].fingers[j].x * surface.getWidth(),hands[i].fingers[j].y * surface.getHeight(),4);
+                        ofCircle(hands[i].fingers[j].x * view.getWidth(),hands[i].fingers[j].y * view.getHeight(),4);
                     }
                 }
             }
@@ -303,18 +303,18 @@ void ofxTrackedSurface::draw(ofTexture &texture ){
 
 // -------------------------------------------------------------------------------- EVENTS
 
-void ofxTrackedSurface::exit(){
+void ofxInteractiveSurface::exit(){
     gui.saveToFile("settings.xml");
-    minDist.removeListener(this,&ofxTrackedSurface::_cleanBackground);
+    minDist.removeListener(this,&ofxInteractiveSurface::_cleanBackground);
     kinect.close();
 }
 
-void ofxTrackedSurface::_cleanBackground(float &_threshold){
+void ofxInteractiveSurface::_cleanBackground(float &_threshold){
     hands.bUpdateBackground = true;
     objects.bUpdateBackground = true;
 }
 
-void  ofxTrackedSurface::_objectAdded(ofxBlob &_blob){
+void  ofxInteractiveSurface::_objectAdded(ofxBlob &_blob){
     if ( (surfaceContour.inside(_blob.centroid)) && 
          (countDown < 0 )){
         _blob.color = kinect.getColorAt(_blob.centroid.x,_blob.centroid.y);
@@ -323,7 +323,7 @@ void  ofxTrackedSurface::_objectAdded(ofxBlob &_blob){
     }
 }
 
-void  ofxTrackedSurface::_objectMoved(ofxBlob &_blob){
+void  ofxInteractiveSurface::_objectMoved(ofxBlob &_blob){
     if ( (surfaceContour.inside(_blob.centroid)) && 
         (countDown < 0 )){
         _blob.color = kinect.getColorAt(_blob.centroid.x,_blob.centroid.y);
@@ -332,7 +332,7 @@ void  ofxTrackedSurface::_objectMoved(ofxBlob &_blob){
     }
 }
 
-void  ofxTrackedSurface::_objectDeleted(ofxBlob &_blob){
+void  ofxInteractiveSurface::_objectDeleted(ofxBlob &_blob){
     if ( (surfaceContour.inside(_blob.centroid)) && 
         (countDown < 0 )){
         ofNotifyEvent(objectDeleted, _blob);
@@ -340,7 +340,7 @@ void  ofxTrackedSurface::_objectDeleted(ofxBlob &_blob){
     }
 }
 
-void  ofxTrackedSurface::_handAdded(ofxBlob &_blob){
+void  ofxInteractiveSurface::_handAdded(ofxBlob &_blob){
     if ( (countDown < 0 ) ){
         _blob.color.set(0,0,0);
         ofNotifyEvent(handAdded, _blob);
@@ -348,7 +348,7 @@ void  ofxTrackedSurface::_handAdded(ofxBlob &_blob){
     } 
 }
 
-void  ofxTrackedSurface::_handMoved(ofxBlob &_blob){
+void  ofxInteractiveSurface::_handMoved(ofxBlob &_blob){
     if ( (countDown < 0 ) ){
         _blob.color.set(0,0,0);
         ofNotifyEvent(handMoved, _blob);
@@ -356,7 +356,7 @@ void  ofxTrackedSurface::_handMoved(ofxBlob &_blob){
     } 
 }
 
-void  ofxTrackedSurface::_handDeleted(ofxBlob &_blob){
+void  ofxInteractiveSurface::_handDeleted(ofxBlob &_blob){
     if ( (countDown < 0 ) ){
         _blob.color.set(0,0,0);
         ofNotifyEvent(handDeleted, _blob);
