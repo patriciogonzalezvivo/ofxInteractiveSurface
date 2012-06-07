@@ -23,7 +23,6 @@ public:
     void        setMask(ofPolyline &_polyLine);
     void        setCoorners(ofPoint _coorners[4]);
     
-    
     int         getId() const { return nId; };
     ofPoint     getPos() const { return ofPoint(x,y); };
     int         getWidth() const {return  width; };
