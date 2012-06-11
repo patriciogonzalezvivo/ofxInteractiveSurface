@@ -160,12 +160,12 @@ bool ofxInteractiveViewPort::saveSettings(string _configFile){
         
         // Get the total number of surfaces...
         //
-        int totalSurfaces = XML.getNumTags("surface");
+        int totalSurfaces = XML.getNumTags("view");
         
         // ... and search for the right id for loading
         //
         for (int i = 0; i < totalSurfaces; i++){
-            if (XML.pushTag("surface", i)){
+            if (XML.pushTag("view", i)){
                 
                 // Once it found the right surface that match the id ...
                 //
