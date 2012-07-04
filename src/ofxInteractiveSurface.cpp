@@ -49,7 +49,7 @@ ofxInteractiveSurface::ofxInteractiveSurface(){
     //  Surface preparation
     //
     view.loadSettings(0,"settings.xml");    // Load the settings of the surface  
-    load();                                     // Load previus configuration
+    load();                                 // Load previus configuration
 
     bDebug = false;
     trackMode = TRACK_NONE;
@@ -58,8 +58,8 @@ ofxInteractiveSurface::ofxInteractiveSurface(){
 //  Load the previus calibration data
 //
 void ofxInteractiveSurface::load(){
-    ofSetFullscreen(true);      // Fullscreen it´s need if the surface it´s on other screen (on dual monitor)
-    surfaceContour = view.getMask();                     // Get a local copy of the surface
+    ofSetFullscreen(true);                  // Fullscreen it´s need if the surface it´s on other screen (on dual monitor)
+    surfaceContour = view.getMask();                        // Get a local copy of the surface
     kinect.setDepthClipping((maxDist-minDist),maxDist);     // Do the right clipping
     countDown = 200;                                        // The count down it´s to make a background sustraction
     bCalibrated = true;                                     // Turn the calibration flag on
@@ -68,9 +68,9 @@ void ofxInteractiveSurface::load(){
 //  Makes a new calibration
 //
 void ofxInteractiveSurface::calibrate(){
-    ofSetFullscreen(true);      // Fullscreen it's need for calibration
-    bCalibrated = false;        // Turn the calibration flag to off
-    autoCalibrator.init(&kinect);  // Initialice calibration
+    ofSetFullscreen(true);          // Fullscreen it's need for calibration
+    bCalibrated = false;            // Turn the calibration flag to off
+    autoCalibrator.init(&kinect);   // Initialice calibration
 }
 
 // ------------------------------------------------------------------------- MAIN LOOP
