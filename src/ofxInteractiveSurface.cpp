@@ -245,6 +245,7 @@ void ofxInteractiveSurface::draw(ofTexture &texture ){
             //  GUI
             //
             ofSetColor(255,255);
+            gui.setPosition(ofGetWidth()-320,510);
             gui.draw();
             
             //  Debuging app performance
