@@ -320,7 +320,7 @@ void ofxInteractiveSurface::_cleanBackground(float &_threshold){
 void  ofxInteractiveSurface::_objectAdded(ofxBlob &_blob){
     if ( (surfaceContour.inside(_blob.centroid)) && 
          (countDown < 0 )){
-        _blob.color = kinect.getColorAt(_blob.centroid.x,_blob.centroid.y);
+        //_blob.color = kinect.getColorAt(_blob.centroid.x,_blob.centroid.y);
         ofNotifyEvent(objectAdded, _blob);
         //ofLog(OF_LOG_NOTICE,"Object added at: " + ofToString(_blob.centroid));
     }
@@ -329,7 +329,7 @@ void  ofxInteractiveSurface::_objectAdded(ofxBlob &_blob){
 void  ofxInteractiveSurface::_objectMoved(ofxBlob &_blob){
     if ( (surfaceContour.inside(_blob.centroid)) && 
         (countDown < 0 )){
-        _blob.color = kinect.getColorAt(_blob.centroid.x,_blob.centroid.y);
+        //_blob.color = kinect.getColorAt(_blob.centroid.x,_blob.centroid.y);
         ofNotifyEvent(objectMoved, _blob);
         //ofLog(OF_LOG_NOTICE,"Object moved at: " + ofToString(_blob.centroid));
     }
