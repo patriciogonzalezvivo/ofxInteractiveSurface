@@ -413,10 +413,17 @@ void ofxInteractiveViewPort::resetMask(){
 }
 
 void ofxInteractiveViewPort::resetFrame(){
-    textureCorners[0].set(0, 0);
-    textureCorners[1].set(width, 0);
-    textureCorners[2].set(width, height);
-    textureCorners[3].set(0, height);
+    
+    int _x = ofGetWidth()*0.5;
+    int _y = ofGetHeight()*0.5;
+    
+    int _w = width*0.5;
+    int _h = height*0.5;
+    
+    textureCorners[0].set(_x-_w*0.5, _y-_h*0.5);
+    textureCorners[1].set(_x+_w*0.5, _y-_h*0.5);
+    textureCorners[2].set(_x+_w*0.5, _y+_h*0.5);
+    textureCorners[3].set(_x-_w*0.5, _y-_h*0.5);
     
     bUpdateCoord = true;
     bUpdateMask = true;
