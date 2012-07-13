@@ -275,7 +275,7 @@ bool ofxKinectAutoCalibrator::doStep2(){
     ofPushStyle();
     ofSetColor(255, 0, 0);
     for (int i = 0; i < 4; i++){
-        ofCircle(realDots[i], 20);
+        ofCircle(realDots[i], 15);
     }
     ofPopStyle();
     ofSetColor(255);
@@ -303,7 +303,7 @@ bool ofxKinectAutoCalibrator::doStep2(){
         rta = true;
     } 
     
-    scaleAreaFactor -= 0.4;
+    scaleAreaFactor -= 0.5;
     
     return rta;
 }

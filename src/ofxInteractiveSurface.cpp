@@ -89,6 +89,7 @@ void ofxInteractiveSurface::update(){
         hands.bUpdateBackground = true;             //  Store the background ...
         objects.bUpdateBackground = true;           //  ... on both trackers
         
+        view.saveSettings("settings.xml");
         ofNotifyEvent(calibrationDone, surfaceContour); // We are ready to go!!!
         countDown--;                                    // CountDown have to be -1 to be inactive
     }
