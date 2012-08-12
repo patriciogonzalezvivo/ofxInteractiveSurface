@@ -1,4 +1,5 @@
-#ofxInteractiveSurface#
+# [ofxInteractiveSurface](http://patriciogonzalezvivo.com/2012/ofxinteractivesurface/)
+[ ![ofxInteractiveSurface](http://patriciogonzalezvivo.com/2012/ofxinteractivesurface/thumb.jpg)](http://patriciogonzalezvivo.com/2012/ofxinteractivesurface/)
 #### by [Patricio Gonzalez Vivo](http://www.patriciogonzalezvivo.com) 
 
 Width this addon you can make interactive ( multiTouch & gestures reactive) surfaces using a KinectSensor.
